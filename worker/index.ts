@@ -1,6 +1,6 @@
 /**
- * Phase 1A worker: poll Postgres for queued jobs, run pipeline.
- * Deploy target: Railway (long-running process).
+ * Worker: poll Postgres for queued jobs, run pipeline (HN + Polymarket + Reddit).
+ * Deploy target: Railway (long-running process). Run only one instance locally.
  *
  * Load .env.local / .env so DATABASE_URL works when not exported in shell.
  */

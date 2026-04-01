@@ -75,3 +75,10 @@ Open the URL Next prints (e.g. `http://localhost:3000`). Use **New** to submit a
 - **Auth:** Signed cookie (`SESSION_SECRET`), `users.kind = anonymous`. Legacy `internal` rows from Phase 1A may remain in DB; new users are anonymous.
 - **Reports:** Deterministic markdown (no OpenAI in this phase).
 - If outbound access to a source fails (DNS, rate limit), that source is marked failed; the job still succeeds if at least one source returns data.
+
+## Runtime troubleshooting (Phase 1B.5)
+
+- **Do not run `npm run build` while `npm run dev` is running** (same `.next` directory). Stop dev first, or you will see 500s and missing chunk errors until you restart `next dev`.
+- **Run exactly one worker** (`npm run worker`). A second stale process can process jobs with an older codebase and skip sources (e.g. only two source runs instead of three). Restart the worker after pulling code changes.
+- **`gamma-api.polymarket.com` not resolving** — Polymarket shows `failed` in source runs; HN + Reddit can still succeed.
+- **Reddit** requires a descriptive `User-Agent` (already set in code). Rate limits may apply.

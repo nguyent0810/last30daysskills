@@ -46,7 +46,13 @@ export default function JobPage() {
       return;
     }
     if (!res.ok) {
-      setError(await res.text());
+      const raw = await res.text();
+      try {
+        const j = JSON.parse(raw) as { error?: string };
+        setError(j.error ?? (raw || res.statusText));
+      } catch {
+        setError(raw || res.statusText);
+      }
       return;
     }
     const json = (await res.json()) as JobPayload;
@@ -106,30 +112,34 @@ export default function JobPage() {
 
       <h2>Sources</h2>
       <p className="muted">What ran for this job (partial failures are OK if another source worked).</p>
-      <table className="source-table">
-        <thead>
-          <tr>
-            <th>Source</th>
-            <th>Result</th>
-            <th>Items stored</th>
-            <th>Note</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.sourceRuns.map((r) => (
-            <tr key={r.source}>
-              <td>{sourceLabel(r.source)}</td>
-              <td>
-                <span className={r.status === "succeeded" ? "badge badge-ok" : "badge badge-fail"}>
-                  {r.status}
-                </span>
-              </td>
-              <td>{r.itemCount}</td>
-              <td style={{ fontSize: "0.85rem" }}>{r.error ?? "—"}</td>
+      {!terminal && data.sourceRuns.length === 0 ? (
+        <p className="muted">Waiting for the worker to fetch sources…</p>
+      ) : (
+        <table className="source-table">
+          <thead>
+            <tr>
+              <th>Source</th>
+              <th>Result</th>
+              <th>Items stored</th>
+              <th>Note</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.sourceRuns.map((r) => (
+              <tr key={r.source}>
+                <td>{sourceLabel(r.source)}</td>
+                <td>
+                  <span className={r.status === "succeeded" ? "badge badge-ok" : "badge badge-fail"}>
+                    {r.status}
+                  </span>
+                </td>
+                <td>{r.itemCount}</td>
+                <td style={{ fontSize: "0.85rem", wordBreak: "break-word" }}>{r.error ?? "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
       <h2>Report</h2>
       {data.report ? (
