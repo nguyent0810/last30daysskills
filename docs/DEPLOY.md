@@ -30,6 +30,8 @@ Do **not** expose `DATABASE_URL` or `SESSION_SECRET` to the client (they are not
 | `WORKER_POLL_MS` | No | Default `3000`. |
 | `OPENAI_API_KEY` | No | If set, final report markdown is optionally polished via OpenAI; if unset or on API failure, the deterministic report is stored as before. |
 | `OPENAI_MODEL` | No | Default `gpt-4o-mini`. |
+| `REDDIT_USER_AGENT` | No | Strongly recommended in production: unique string with contact URL (Reddit policy + may reduce blocks). |
+| `REDDIT_DISABLED` | No | Set to `1` to skip Reddit on the worker (clear error row; job can still succeed on other sources). |
 
 The worker **does not** need `SESSION_SECRET` (sessions are handled by the Next.js app).
 
@@ -126,6 +128,7 @@ This exercises: `/api/health`, anonymous session, job create, polling, history l
 - **One worker process** in production (Railway scale = 1).
 - **Restart worker** after deploys that change `lib/jobs`, `lib/research`, or `worker/`.
 - **Polymarket** may fail if `gamma-api.polymarket.com` is unreachable from the worker region; jobs can still succeed on HN + Reddit.
+- **Reddit** (`www.reddit.com/search.json`) often returns **403 Blocked** from cloud/datacenter egress IPs (e.g. Railway), even with a proper `User-Agent`. This is **expected** for unauthenticated JSON access. Mitigations: set **`REDDIT_USER_AGENT`** on the worker to a unique string with a **real** contact or project URL; if Reddit is non-essential, set **`REDDIT_DISABLED=1`** so the source row fails fast with a clear message. There is no reliable fix without OAuth, residential egress, or a third-party API — out of scope for this MVP.
 
 ## 8. Local vs staging
 

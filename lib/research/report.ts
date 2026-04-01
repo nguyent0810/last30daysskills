@@ -27,7 +27,7 @@ export function buildDeterministicReport(topic: string, items: ScoredItem[]): st
   lines.push("");
   lines.push("- Hacker News (Algolia API)");
   lines.push("- Polymarket (Gamma API, keyword filter)");
-  lines.push("- Reddit (public `search.json`, User-Agent required)");
+  lines.push("- Reddit (public `search.json`; often blocked from cloud IPs — best-effort)");
   return lines.join("\n");
 }
 

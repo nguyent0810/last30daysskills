@@ -1,20 +1,46 @@
 import type { ResearchItemInput } from "../types";
 import { fetchWithContext } from "../http";
 
-const UA = "CRM-Research/1.0 (public JSON only; +https://github.com/)";
+/**
+ * Reddit expects a unique, descriptive User-Agent with contact context.
+ * @see https://github.com/reddit-archive/reddit/wiki/API
+ *
+ * Cloud/datacenter IPs (Railway, AWS, etc.) often get HTTP 403 "Blocked" from Reddit’s edge
+ * even with a valid UA — that is an infrastructure limitation, not something we can fully fix client-side.
+ */
+const DEFAULT_UA =
+  "crm-research/1.0 (topic research snapshot; +https://github.com/; public search.json only)";
+
+function redditUserAgent(): string {
+  const custom = process.env.REDDIT_USER_AGENT?.trim();
+  if (custom && custom.length >= 12) return custom;
+  return DEFAULT_UA;
+}
 
 /**
  * Reddit public `.json` search — no OAuth, no scraping.
- * Requires a descriptive User-Agent (see https://github.com/reddit-archive/reddit/wiki/API).
  */
 export async function fetchRedditSearch(topic: string): Promise<ResearchItemInput[]> {
+  const disabled = process.env.REDDIT_DISABLED?.trim();
+  if (disabled === "1" || /^true$/i.test(disabled ?? "")) {
+    throw new Error("Reddit skipped (REDDIT_DISABLED is set on the worker)");
+  }
+
   const q = encodeURIComponent(topic);
   const url = `https://www.reddit.com/search.json?q=${q}&restrict_sr=0&sort=relevance&limit=25`;
   const res = await fetchWithContext(url, {
-    headers: { "User-Agent": UA },
+    headers: {
+      "User-Agent": redditUserAgent(),
+      Accept: "application/json",
+      "Accept-Language": "en-US,en;q=0.9",
+    },
   });
   if (!res.ok) {
-    throw new Error(`Reddit search ${res.status}: ${res.statusText}`);
+    const hint = await res.text().catch(() => "");
+    const clip = hint.replace(/\s+/g, " ").trim().slice(0, 120);
+    throw new Error(
+      `Reddit search ${res.status}: ${res.statusText}${clip ? ` — ${clip}` : ""}`.trim()
+    );
   }
   const json = (await res.json()) as {
     data?: { children?: Array<{ data?: Record<string, unknown> }> };
