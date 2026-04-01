@@ -2,6 +2,8 @@
 
 Topic → queued job → worker (Hacker News + Polymarket + Reddit public JSON) → deterministic markdown report. **Anonymous session** via signed HTTP-only cookie (`crm_session`). No OAuth.
 
+**Deployment:** see [docs/DEPLOY.md](docs/DEPLOY.md) (Vercel + Railway worker + Neon).
+
 ## Requirements
 
 - Node 18+

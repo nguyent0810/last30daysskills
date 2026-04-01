@@ -1,0 +1,6 @@
+# Railway: create a **worker** service from this repo (separate from Vercel web).
+# Uses Dockerfile.worker so the default Nixpacks Next.js build is not applied.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.worker"

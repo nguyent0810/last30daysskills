@@ -1,0 +1,15 @@
+# Worker-only image for Railway (polls Postgres, runs research pipeline).
+# Web app stays on Vercel; do not use this image for the Next.js frontend.
+
+FROM node:20-alpine AS base
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY lib ./lib
+COPY worker ./worker
+COPY tsconfig.json ./
+
+CMD ["npm", "run", "worker"]
