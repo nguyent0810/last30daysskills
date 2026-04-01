@@ -84,11 +84,28 @@ Run **one** Railway replica (scale = 1) so only one process polls the `queued` j
 
 ## 6. Post-deploy smoke checks (staging / production)
 
+### Manual
+
 1. Open the deployed site; confirm **GET `/api/health`** returns JSON `{"ok":true}` (or 200).
 2. Open **Home**, submit a topic; confirm redirect to **`/job/[id]`** and status updates.
 3. Open **History**; confirm the job appears for that browser session.
 4. Confirm **Sources** table shows HN / Polymarket / Reddit rows (some may `failed` if DNS/rate limits).
 5. Confirm **Report** renders markdown when the job succeeds.
+
+### Automated (API)
+
+From a machine with PowerShell and network access to the **HTTPS** deployment (required for session cookies in production — see §6 “Local HTTP vs production cookies”):
+
+```powershell
+$env:STAGING_BASE_URL = "https://your-deployment.vercel.app"
+.\scripts\staging-smoke.ps1
+```
+
+This exercises: `/api/health`, anonymous session, job create, polling, history list, `sourceRuns`, and report body on success.
+
+### Local HTTP vs production cookies
+
+`next start` runs with `NODE_ENV=production`, so session cookies include **`Secure`**. Browsers and scripts using **HTTP** (e.g. `http://localhost`) will not send those cookies, so API calls after create session return **401**. For a local end-to-end API check without HTTPS, use **`npm run dev`** (development omits `Secure`) plus a running worker, or test against the real **HTTPS** staging URL.
 
 ## 7. Operational discipline
 
@@ -111,3 +128,8 @@ curl -s http://localhost:3000/api/health
 ```
 
 Expect: `{"ok":true,"service":"web"}`. This mirrors the Vercel server bundle. Full job flow still needs a running worker + `DATABASE_URL` + `SESSION_SECRET` in the environment.
+
+## 10. CLI deploy (optional)
+
+- **Vercel:** `vercel login` once, then `vercel link` in the repo, or connect the Git repo in the Vercel dashboard. Non-interactive CI: set `VERCEL_TOKEN` and use `vercel deploy --prod --token $env:VERCEL_TOKEN` (see Vercel docs).
+- **Railway:** install `@railway/cli`, `railway login`, then `railway up` or attach the repo in the dashboard. Set `DATABASE_URL` on the worker service.
