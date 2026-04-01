@@ -26,6 +26,8 @@ Do **not** expose `DATABASE_URL` or `SESSION_SECRET` to the client (they are not
 |----------|----------|--------|
 | `DATABASE_URL` | Yes | Same as Vercel. |
 | `WORKER_POLL_MS` | No | Default `3000`. |
+| `OPENAI_API_KEY` | No | If set, final report markdown is optionally polished via OpenAI; if unset or on API failure, the deterministic report is stored as before. |
+| `OPENAI_MODEL` | No | Default `gpt-4o-mini`. |
 
 The worker **does not** need `SESSION_SECRET` (sessions are handled by the Next.js app).
 

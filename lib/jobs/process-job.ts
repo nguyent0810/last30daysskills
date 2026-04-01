@@ -7,6 +7,7 @@ import {
   researchSourceRuns,
 } from "@/lib/db/schema";
 import { runFetchAndRank } from "@/lib/research/pipeline";
+import { synthesizeReportWithOpenAI } from "@/lib/research/synthesize-report-openai";
 
 /** Ensure JSONB payload is serializable (drops BigInt / circular refs). */
 function safeJsonForDb(value: unknown): Record<string, unknown> | null {
@@ -108,9 +109,11 @@ export async function processJob(db: Db, jobId: string): Promise<void> {
     });
   }
 
+  const reportContent = await synthesizeReportWithOpenAI(job.topic, result.report);
+
   await db.insert(reports).values({
     jobId,
-    content: result.report,
+    content: reportContent,
   });
 
   await db
