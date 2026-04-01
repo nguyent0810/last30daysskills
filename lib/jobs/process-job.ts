@@ -8,6 +8,16 @@ import {
 } from "@/lib/db/schema";
 import { runFetchAndRank } from "@/lib/research/pipeline";
 
+/** Ensure JSONB payload is serializable (drops BigInt / circular refs). */
+function safeJsonForDb(value: unknown): Record<string, unknown> | null {
+  if (value === undefined || value === null) return null;
+  try {
+    return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Worker: load job, run pipeline, persist runs/items/report, set job status.
  * Job fails only if both sources error (no usable data).
@@ -78,7 +88,7 @@ export async function processJob(db: Db, jobId: string): Promise<void> {
       url: it.url,
       snippet: it.snippet,
       score: it.score,
-      raw: it.raw !== undefined ? (it.raw as Record<string, unknown>) : null,
+      raw: safeJsonForDb(it.raw),
     });
   }
 

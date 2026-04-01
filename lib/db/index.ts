@@ -1,5 +1,5 @@
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import * as schema from "./schema";
 
 export function requireDatabaseUrl(): string {
@@ -10,10 +10,18 @@ export function requireDatabaseUrl(): string {
   return url;
 }
 
-/** Server-side DB client (Next.js routes, worker). */
+/** Single shared pool (worker + Next.js API routes in dev share process; avoid new Pool per getDb()). */
+let pool: Pool | null = null;
+
+/** Server-side DB client (Next.js routes, worker). Uses `pg` — works with Neon pooler URLs and local Postgres. */
 export function getDb() {
-  const sql = neon(requireDatabaseUrl());
-  return drizzle(sql, { schema });
+  if (!pool) {
+    pool = new Pool({
+      connectionString: requireDatabaseUrl(),
+      max: 10,
+    });
+  }
+  return drizzle(pool, { schema });
 }
 
 export type Db = ReturnType<typeof getDb>;

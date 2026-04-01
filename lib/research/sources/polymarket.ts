@@ -1,4 +1,5 @@
 import type { ResearchItemInput } from "../types";
+import { fetchWithContext } from "../http";
 
 const GAMMA_MARKETS = "https://gamma-api.polymarket.com/markets";
 
@@ -7,7 +8,7 @@ const GAMMA_MARKETS = "https://gamma-api.polymarket.com/markets";
  * No search endpoint — deterministic client-side filter (MVP).
  */
 export async function fetchPolymarket(topic: string): Promise<ResearchItemInput[]> {
-  const res = await fetch(`${GAMMA_MARKETS}?limit=150&active=true`);
+  const res = await fetchWithContext(`${GAMMA_MARKETS}?limit=150&active=true`);
   if (!res.ok) {
     throw new Error(`Polymarket API ${res.status}: ${res.statusText}`);
   }

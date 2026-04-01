@@ -1,10 +1,11 @@
 import type { ResearchItemInput } from "../types";
+import { fetchWithContext } from "../http";
 
 const HN_SEARCH = "https://hn.algolia.com/api/v1/search";
 
 export async function fetchHackerNews(topic: string): Promise<ResearchItemInput[]> {
   const url = `${HN_SEARCH}?query=${encodeURIComponent(topic)}&tags=story&hitsPerPage=30`;
-  const res = await fetch(url);
+  const res = await fetchWithContext(url);
   if (!res.ok) {
     throw new Error(`HN API ${res.status}: ${res.statusText}`);
   }
