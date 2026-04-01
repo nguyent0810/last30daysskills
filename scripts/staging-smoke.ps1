@@ -20,6 +20,15 @@ Write-Host "GET $Base/api/health"
 $health = Invoke-RestMethod -Uri "$Base/api/health" -Method Get
 if (-not $health.ok) { throw "Health check failed" }
 Write-Host "  ok: $($health.ok) service=$($health.service)"
+if ($null -ne $health.ready) {
+  Write-Host "  ready: $($health.ready)"
+  if ($health.checks) {
+    Write-Host "  checks.databaseUrl: $($health.checks.databaseUrl) sessionSecret: $($health.checks.sessionSecret)"
+  }
+  if (-not $health.ready) {
+    Write-Warning "Vercel env may be incomplete: set DATABASE_URL and SESSION_SECRET (min 16 chars), then redeploy."
+  }
+}
 
 $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 Write-Host "GET $Base/api/session (anonymous)"

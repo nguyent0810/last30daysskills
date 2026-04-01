@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { desc, eq } from "drizzle-orm";
+import { jsonFromRouteError } from "@/lib/api/route-error-response";
 import { getDb } from "@/lib/db";
 import { researchJobs } from "@/lib/db/schema";
 import { getOrCreateAnonymousUser } from "@/lib/auth/anonymous";
@@ -23,45 +24,53 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid body", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const db = getDb();
-  const { userId, setCookieHeader } = await getOrCreateAnonymousUser();
+  try {
+    const db = getDb();
+    const { userId, setCookieHeader } = await getOrCreateAnonymousUser();
 
-  const [job] = await db
-    .insert(researchJobs)
-    .values({
-      userId,
-      topic: parsed.data.topic.trim(),
-      status: "queued",
-    })
-    .returning({ id: researchJobs.id, status: researchJobs.status });
+    const [job] = await db
+      .insert(researchJobs)
+      .values({
+        userId,
+        topic: parsed.data.topic.trim(),
+        status: "queued",
+      })
+      .returning({ id: researchJobs.id, status: researchJobs.status });
 
-  const res = NextResponse.json({ id: job.id, status: job.status });
-  if (setCookieHeader) {
-    res.headers.append("Set-Cookie", setCookieHeader);
+    const res = NextResponse.json({ id: job.id, status: job.status });
+    if (setCookieHeader) {
+      res.headers.append("Set-Cookie", setCookieHeader);
+    }
+    return res;
+  } catch (e) {
+    return jsonFromRouteError(e, "[api/jobs POST]");
   }
-  return res;
 }
 
 /** Recent jobs for the current anonymous session. */
 export async function GET() {
-  const db = getDb();
-  const { userId, setCookieHeader } = await getOrCreateAnonymousUser();
+  try {
+    const db = getDb();
+    const { userId, setCookieHeader } = await getOrCreateAnonymousUser();
 
-  const rows = await db
-    .select({
-      id: researchJobs.id,
-      topic: researchJobs.topic,
-      status: researchJobs.status,
-      createdAt: researchJobs.createdAt,
-    })
-    .from(researchJobs)
-    .where(eq(researchJobs.userId, userId))
-    .orderBy(desc(researchJobs.createdAt))
-    .limit(50);
+    const rows = await db
+      .select({
+        id: researchJobs.id,
+        topic: researchJobs.topic,
+        status: researchJobs.status,
+        createdAt: researchJobs.createdAt,
+      })
+      .from(researchJobs)
+      .where(eq(researchJobs.userId, userId))
+      .orderBy(desc(researchJobs.createdAt))
+      .limit(50);
 
-  const res = NextResponse.json({ jobs: rows });
-  if (setCookieHeader) {
-    res.headers.append("Set-Cookie", setCookieHeader);
+    const res = NextResponse.json({ jobs: rows });
+    if (setCookieHeader) {
+      res.headers.append("Set-Cookie", setCookieHeader);
+    }
+    return res;
+  } catch (e) {
+    return jsonFromRouteError(e, "[api/jobs GET]");
   }
-  return res;
 }

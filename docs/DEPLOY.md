@@ -84,11 +84,21 @@ Nixpacks may try to run `npm run build` (Next.js). For a **worker-only** service
 
 Run **one** Railway replica (scale = 1) so only one process polls the `queued` jobs table. Multiple workers can cause duplicate processing races in this MVP.
 
+### First-time Railway steps (copy checklist)
+
+1. In [Railway](https://railway.app), create a project and **Deploy from GitHub** → select this repository, branch **`automation`** (or your production branch).
+2. If Railway created a default web service, either delete it or add a **second** service so the worker is separate from Vercel’s Next.js app.
+3. For the **worker** service: **Settings → Build** → set builder to **Dockerfile** (repo root). **Dockerfile path:** `Dockerfile.worker`. (`railway.toml` in the repo already sets this when Railway detects it.)
+4. **Variables** tab: add **`DATABASE_URL`** with the **same** Neon pooled connection string as Vercel. Optionally `WORKER_POLL_MS`, `OPENAI_API_KEY`, `OPENAI_MODEL`.
+5. **Settings → Deploy** (or Scaling): **Replicas = 1**.
+6. Deploy and open **Logs**. You should see `Worker polling every 3000ms` (or your `WORKER_POLL_MS`). If the container exits, check that `DATABASE_URL` is set and reachable from Railway’s region.
+7. Smoke-test from your machine: `.\scripts\staging-smoke.ps1` with `$env:STAGING_BASE_URL = "https://last30daysskills.vercel.app"` (after Vercel shows `ready: true` on `/api/health`).
+
 ## 6. Post-deploy smoke checks (staging / production)
 
 ### Manual
 
-1. Open the deployed site; confirm **GET `/api/health`** returns JSON `{"ok":true}` (or 200).
+1. Open the deployed site; confirm **GET `/api/health`** returns JSON with `ok: true`, `ready: true`, and `checks` showing `databaseUrl` and `sessionSecret` both true. If `ready` is false, fix Vercel environment variables (`DATABASE_URL`, `SESSION_SECRET` ≥ 16 chars) and redeploy.
 2. Open **Home**, submit a topic; confirm redirect to **`/job/[id]`** and status updates.
 3. Open **History**; confirm the job appears for that browser session.
 4. Confirm **Sources** table shows HN / Polymarket / Reddit rows (some may `failed` if DNS/rate limits).
