@@ -109,11 +109,12 @@ export async function processJob(db: Db, jobId: string): Promise<void> {
     });
   }
 
-  const reportContent = await synthesizeReportWithOpenAI(job.topic, result.report);
+  const synthesized = await synthesizeReportWithOpenAI(job.topic, result.report);
 
   await db.insert(reports).values({
     jobId,
-    content: reportContent,
+    content: synthesized.markdown,
+    reportMode: synthesized.mode,
   });
 
   await db

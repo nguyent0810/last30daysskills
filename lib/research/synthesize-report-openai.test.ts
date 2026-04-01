@@ -11,7 +11,8 @@ describe("synthesizeReportWithOpenAI", () => {
       apiKey: "",
       fetchImpl: fetchSpy as unknown as typeof fetch,
     });
-    expect(out).toBe(DETERMINISTIC);
+    expect(out.markdown).toBe(DETERMINISTIC);
+    expect(out.mode).toBe("deterministic");
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
@@ -25,7 +26,8 @@ describe("synthesizeReportWithOpenAI", () => {
       apiKey: "sk-test",
       fetchImpl: fetchImpl as unknown as typeof fetch,
     });
-    expect(out).toBe(DETERMINISTIC);
+    expect(out.markdown).toBe(DETERMINISTIC);
+    expect(out.mode).toBe("deterministic");
   });
 
   it("returns deterministic markdown when response JSON has no message content", async () => {
@@ -37,7 +39,8 @@ describe("synthesizeReportWithOpenAI", () => {
       apiKey: "sk-test",
       fetchImpl: fetchImpl as unknown as typeof fetch,
     });
-    expect(out).toBe(DETERMINISTIC);
+    expect(out.markdown).toBe(DETERMINISTIC);
+    expect(out.mode).toBe("deterministic");
   });
 
   it("returns model markdown on success", async () => {
@@ -53,7 +56,8 @@ describe("synthesizeReportWithOpenAI", () => {
       model: "gpt-4o-mini",
       fetchImpl: fetchImpl as unknown as typeof fetch,
     });
-    expect(out).toBe(polished);
+    expect(out.markdown).toBe(polished);
+    expect(out.mode).toBe("openai");
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     const [, init] = fetchImpl.mock.calls[0];
     const body = JSON.parse((init as RequestInit).body as string);
@@ -67,6 +71,7 @@ describe("synthesizeReportWithOpenAI", () => {
       apiKey: "sk-test",
       fetchImpl: fetchImpl as unknown as typeof fetch,
     });
-    expect(out).toBe(DETERMINISTIC);
+    expect(out.markdown).toBe(DETERMINISTIC);
+    expect(out.mode).toBe("deterministic");
   });
 });

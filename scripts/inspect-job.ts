@@ -47,7 +47,20 @@ async function main() {
     .where(eq(reports.jobId, jobId))
     .limit(1);
 
-  console.log(JSON.stringify({ job, sourceRuns: runs, itemCount: items.length, reportChars: report?.content.length ?? 0, reportPreview: report?.content.slice(0, 400) }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        job,
+        sourceRuns: runs,
+        itemCount: items.length,
+        reportChars: report?.content.length ?? 0,
+        reportMode: report?.reportMode ?? null,
+        reportPreview: report?.content.slice(0, 400),
+      },
+      null,
+      2
+    )
+  );
 }
 
 main().catch((e) => {

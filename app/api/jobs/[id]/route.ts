@@ -4,6 +4,7 @@ import { jsonFromRouteError } from "@/lib/api/route-error-response";
 import { getDb } from "@/lib/db";
 import { reports, researchJobs, researchSourceRuns } from "@/lib/db/schema";
 import { getAnonymousUserIdIfPresent } from "@/lib/auth/anonymous";
+import { toReportModeApi } from "@/lib/report-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +63,7 @@ export async function GET(
         updatedAt: job.updatedAt,
       },
       report: report?.content ?? null,
+      reportMode: toReportModeApi(report?.reportMode),
       sourceRuns: runs,
     });
   } catch (e) {

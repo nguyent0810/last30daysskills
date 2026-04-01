@@ -3,7 +3,8 @@ import { z } from "zod";
 import { desc, eq } from "drizzle-orm";
 import { jsonFromRouteError } from "@/lib/api/route-error-response";
 import { getDb } from "@/lib/db";
-import { researchJobs } from "@/lib/db/schema";
+import { reports, researchJobs } from "@/lib/db/schema";
+import { toReportModeApi } from "@/lib/report-mode";
 import { getOrCreateAnonymousUser } from "@/lib/auth/anonymous";
 
 export const dynamic = "force-dynamic";
@@ -59,13 +60,23 @@ export async function GET() {
         topic: researchJobs.topic,
         status: researchJobs.status,
         createdAt: researchJobs.createdAt,
+        reportModeStored: reports.reportMode,
       })
       .from(researchJobs)
+      .leftJoin(reports, eq(reports.jobId, researchJobs.id))
       .where(eq(researchJobs.userId, userId))
       .orderBy(desc(researchJobs.createdAt))
       .limit(50);
 
-    const res = NextResponse.json({ jobs: rows });
+    const jobs = rows.map((r) => ({
+      id: r.id,
+      topic: r.topic,
+      status: r.status,
+      createdAt: r.createdAt,
+      reportMode: toReportModeApi(r.reportModeStored),
+    }));
+
+    const res = NextResponse.json({ jobs });
     if (setCookieHeader) {
       res.headers.append("Set-Cookie", setCookieHeader);
     }

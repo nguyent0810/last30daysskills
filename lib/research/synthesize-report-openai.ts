@@ -35,17 +35,23 @@ export type SynthesizeOptions = {
   fetchImpl?: typeof fetch;
 };
 
+export type SynthesizeReportResult = {
+  markdown: string;
+  /** OpenAI succeeded and returned content different path from fallback-only. */
+  mode: "deterministic" | "openai";
+};
+
 /**
- * Returns OpenAI-polished markdown when configured and successful; otherwise returns `deterministicMarkdown` unchanged.
+ * Returns OpenAI-polished markdown when configured and successful; otherwise deterministic markdown.
  */
 export async function synthesizeReportWithOpenAI(
   topic: string,
   deterministicMarkdown: string,
   options?: SynthesizeOptions
-): Promise<string> {
+): Promise<SynthesizeReportResult> {
   const apiKey = (options?.apiKey ?? process.env.OPENAI_API_KEY)?.trim();
   if (!apiKey) {
-    return deterministicMarkdown;
+    return { markdown: deterministicMarkdown, mode: "deterministic" };
   }
 
   const model = (options?.model ?? process.env.OPENAI_MODEL)?.trim() || DEFAULT_MODEL;
@@ -73,7 +79,7 @@ export async function synthesizeReportWithOpenAI(
       console.warn(
         `[synthesizeReportWithOpenAI] OpenAI HTTP ${res.status}; using deterministic report`
       );
-      return deterministicMarkdown;
+      return { markdown: deterministicMarkdown, mode: "deterministic" };
     }
 
     const data = (await res.json()) as {
@@ -82,13 +88,13 @@ export async function synthesizeReportWithOpenAI(
     const content = data.choices?.[0]?.message?.content?.trim();
     if (!content) {
       console.warn("[synthesizeReportWithOpenAI] empty model content; using deterministic report");
-      return deterministicMarkdown;
+      return { markdown: deterministicMarkdown, mode: "deterministic" };
     }
 
-    return content;
+    return { markdown: content, mode: "openai" };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.warn(`[synthesizeReportWithOpenAI] ${msg}; using deterministic report`);
-    return deterministicMarkdown;
+    return { markdown: deterministicMarkdown, mode: "deterministic" };
   }
 }

@@ -60,5 +60,7 @@ export const reports = pgTable("reports", {
     .unique()
     .references(() => researchJobs.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
+  /** `deterministic` | `openai`; null = legacy row before column existed */
+  reportMode: text("report_mode"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
