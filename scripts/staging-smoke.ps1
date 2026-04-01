@@ -5,7 +5,9 @@
 param(
   [string] $BaseUrl = $env:STAGING_BASE_URL,
   [int] $PollSeconds = 180,
-  [int] $PollIntervalSec = 3
+  [int] $PollIntervalSec = 3,
+  # Use when the worker has no OPENAI_API_KEY (report should keep the deterministic disclaimer line).
+  [switch] $ExpectDeterministicDisclaimer
 )
 
 $ErrorActionPreference = "Stop"
@@ -65,5 +67,11 @@ foreach ($r in $runs) {
 
 if (-not $last.report) { throw "Expected report markdown on success" }
 Write-Host "  report length: $($last.report.Length) chars"
+
+$hasDisclaimer = $last.report -match "Generated without AI"
+Write-Host "  report contains deterministic disclaimer (Generated without AI): $hasDisclaimer"
+if ($ExpectDeterministicDisclaimer -and -not $hasDisclaimer) {
+  throw "Expected deterministic disclaimer in report (worker likely has OPENAI_API_KEY or report truncated)."
+}
 
 Write-Host "PASS: staging smoke OK"

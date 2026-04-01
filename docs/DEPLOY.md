@@ -135,3 +135,35 @@ Expect: `{"ok":true,"service":"web"}`. This mirrors the Vercel server bundle. Fu
 
 - **Vercel:** `vercel login` once, then `vercel link` in the repo, or connect the Git repo in the Vercel dashboard. Non-interactive CI: set `VERCEL_TOKEN` and use `vercel deploy --prod --token $env:VERCEL_TOKEN` (see Vercel docs).
 - **Railway:** install `@railway/cli`, `railway login`, then `railway up` or attach the repo in the dashboard. Set `DATABASE_URL` on the worker service.
+
+## 11. End-to-end staging verification (real URLs)
+
+Prerequisites: Neon schema applied (`npm run db:push` against the staging URL), web deployed to Vercel (HTTPS), **one** Railway worker with the same `DATABASE_URL`.
+
+Use the **HTTPS** Vercel hostname (required for `Secure` session cookies in production).
+
+### Worker without `OPENAI_API_KEY` (deterministic report path)
+
+On Railway, leave `OPENAI_API_KEY` unset (or remove it), redeploy/restart the worker, then:
+
+```powershell
+$env:STAGING_BASE_URL = "https://your-deployment.vercel.app"
+.\scripts\staging-smoke.ps1 -ExpectDeterministicDisclaimer
+```
+
+The script checks health, session, job create, polling, history, `sourceRuns`, and that the stored report still contains the deterministic disclaimer text `Generated without AI` (heuristic for deterministic-only path).
+
+### Worker with `OPENAI_API_KEY` (optional polish path)
+
+Set `OPENAI_API_KEY` (and optional `OPENAI_MODEL`) on the Railway worker, redeploy/restart, then:
+
+```powershell
+$env:STAGING_BASE_URL = "https://your-deployment.vercel.app"
+.\scripts\staging-smoke.ps1
+```
+
+Expect job success and a non-empty report; the disclaimer may be absent or rewritten—do **not** use `-ExpectDeterministicDisclaimer` here.
+
+### Deploy automation without platform credentials
+
+A machine with **no** `vercel login` / `VERCEL_TOKEN` and **no** `railway login` / `RAILWAY_TOKEN` cannot create or update Vercel/Railway services from the CLI. Run the deploy steps locally or in CI after storing platform tokens as secrets.
