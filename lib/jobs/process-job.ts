@@ -20,7 +20,7 @@ function safeJsonForDb(value: unknown): Record<string, unknown> | null {
 
 /**
  * Worker: load job, run pipeline, persist runs/items/report, set job status.
- * Job fails only if both sources error (no usable data).
+ * Job fails only if HN, Polymarket, and Reddit all error (no usable data).
  */
 export async function processJob(db: Db, jobId: string): Promise<void> {
   const [job] = await db
@@ -36,15 +36,17 @@ export async function processJob(db: Db, jobId: string): Promise<void> {
 
   const hnRunStatus = result.hn.error ? "failed" : "succeeded";
   const pmRunStatus = result.polymarket.error ? "failed" : "succeeded";
+  const rdRunStatus = result.reddit.error ? "failed" : "succeeded";
   const hnCount = result.items.filter((i) => i.source === "hn").length;
   const pmCount = result.items.filter((i) => i.source === "polymarket").length;
+  const rdCount = result.items.filter((i) => i.source === "reddit").length;
 
-  if (result.hn.error && result.polymarket.error) {
+  if (result.hn.error && result.polymarket.error && result.reddit.error) {
     await db
       .update(researchJobs)
       .set({
         status: "failed",
-        error: `HN: ${result.hn.error}; Polymarket: ${result.polymarket.error}`,
+        error: `HN: ${result.hn.error}; Polymarket: ${result.polymarket.error}; Reddit: ${result.reddit.error}`,
         updatedAt: new Date(),
       })
       .where(eq(researchJobs.id, jobId));
@@ -60,6 +62,13 @@ export async function processJob(db: Db, jobId: string): Promise<void> {
       source: "polymarket",
       status: "failed",
       error: result.polymarket.error,
+      itemCount: 0,
+    });
+    await db.insert(researchSourceRuns).values({
+      jobId,
+      source: "reddit",
+      status: "failed",
+      error: result.reddit.error,
       itemCount: 0,
     });
     return;
@@ -78,6 +87,13 @@ export async function processJob(db: Db, jobId: string): Promise<void> {
     status: pmRunStatus,
     error: result.polymarket.error ?? null,
     itemCount: pmCount,
+  });
+  await db.insert(researchSourceRuns).values({
+    jobId,
+    source: "reddit",
+    status: rdRunStatus,
+    error: result.reddit.error ?? null,
+    itemCount: rdCount,
   });
 
   for (const it of result.items) {

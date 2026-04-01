@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "./globals.css";
+import { SessionBootstrap } from "@/components/SessionBootstrap";
 
 export const metadata: Metadata = {
-  title: "Research (Phase 1A)",
-  description: "Internal research job prototype",
+  title: "Research",
+  description: "Topic research across public sources",
 };
 
 export default function RootLayout({
@@ -13,7 +15,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <SessionBootstrap />
+        <header className="site-header">
+          <strong>Research</strong>
+          <nav className="site-nav">
+            <Link href="/">New</Link>
+            <Link href="/history">History</Link>
+          </nav>
+        </header>
+        <main className="site-main">{children}</main>
+      </body>
     </html>
   );
 }

@@ -4,6 +4,7 @@ import { dedupeByUrl } from "./dedupe";
 import { scoreItems, sortByScoreDesc } from "./score";
 import { fetchHackerNews } from "./sources/hacker-news";
 import { fetchPolymarket } from "./sources/polymarket";
+import { fetchRedditSearch } from "./sources/reddit";
 import { buildDeterministicReport } from "./report";
 import type { ScoredItem } from "./types";
 
@@ -12,6 +13,7 @@ export type PipelineResult = {
   report: string;
   hn: { itemCount: number; error?: string };
   polymarket: { itemCount: number; error?: string };
+  reddit: { itemCount: number; error?: string };
 };
 
 export async function runFetchAndRank(topic: string): Promise<PipelineResult> {
@@ -31,7 +33,15 @@ export async function runFetchAndRank(topic: string): Promise<PipelineResult> {
     pmError = e instanceof Error ? e.message : String(e);
   }
 
-  const raw = [...hnItems, ...pmItems].map((i) => normalizeItem(i));
+  let redditItems: ResearchItemInput[] = [];
+  let redditError: string | undefined;
+  try {
+    redditItems = await fetchRedditSearch(topic);
+  } catch (e) {
+    redditError = e instanceof Error ? e.message : String(e);
+  }
+
+  const raw = [...hnItems, ...pmItems, ...redditItems].map((i) => normalizeItem(i));
   const deduped = dedupeByUrl(raw);
   const scored = scoreItems(topic, deduped);
   const sorted = sortByScoreDesc(scored);
@@ -42,5 +52,6 @@ export async function runFetchAndRank(topic: string): Promise<PipelineResult> {
     report,
     hn: { itemCount: hnItems.length, error: hnError },
     polymarket: { itemCount: pmItems.length, error: pmError },
+    reddit: { itemCount: redditItems.length, error: redditError },
   };
 }

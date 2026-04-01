@@ -38,7 +38,9 @@ function computeScore(topicTokens: Set<string>, item: ResearchItemInput): number
     recency = Math.max(0, 1 - age / MAX_AGE_SEC) * 0.15;
   }
 
-  return Math.min(1, base * 0.85 + recency + (item.source === "hn" ? 0.02 : 0));
+  const sourceBoost =
+    item.source === "hn" || item.source === "reddit" ? 0.02 : 0;
+  return Math.min(1, base * 0.85 + recency + sourceBoost);
 }
 
 export function sortByScoreDesc(items: ScoredItem[]): ScoredItem[] {

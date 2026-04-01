@@ -1,11 +1,12 @@
-# CRM Research — Phase 1A
+# CRM Research — Phase 1B
 
-Internal prototype: topic → queued job → worker (HN + Polymarket) → deterministic report.
+Topic → queued job → worker (Hacker News + Polymarket + Reddit public JSON) → deterministic markdown report. **Anonymous session** via signed HTTP-only cookie (`crm_session`). No OAuth.
 
 ## Requirements
 
 - Node 18+
-- Postgres `DATABASE_URL` (Neon pooler connection string works; local Docker Postgres works for dev)
+- Postgres `DATABASE_URL` (Neon pooler or local Docker)
+- **`SESSION_SECRET`** (min 16 chars) — `openssl rand -hex 32`
 
 ## Setup
 
@@ -13,13 +14,14 @@ Internal prototype: topic → queued job → worker (HN + Polymarket) → determ
 npm install
 ```
 
-Create `.env.local` (Next.js loads it; the worker loads `.env.local` and `.env` via `dotenv`):
+Create `.env.local`:
 
 ```
-DATABASE_URL=postgresql://user:password@host/dbname
+DATABASE_URL=postgresql://...
+SESSION_SECRET=...   # required in Phase 1B
 ```
 
-Apply schema (loads env from `.env.local` / `.env`):
+Apply schema:
 
 ```bash
 npm run db:push
@@ -33,13 +35,13 @@ Terminal 1 — web:
 npm run dev
 ```
 
-Terminal 2 — worker (required for jobs to complete):
+Terminal 2 — worker:
 
 ```bash
 npm run worker
 ```
 
-Open the URL Next prints (often `http://localhost:3000`) — submit a topic and poll status.
+Open the URL Next prints (e.g. `http://localhost:3000`). Use **New** to submit a topic, **History** for this browser’s jobs.
 
 ## Scripts
 
@@ -49,21 +51,27 @@ Open the URL Next prints (often `http://localhost:3000`) — submit a topic and 
 | `npm run build` | Production build |
 | `npm run worker` | Job poller |
 | `npm test` | Vitest |
-| `npm run db:push` | `drizzle-kit push` with env from `.env.local` |
-| `npm run db:inspect -- <job-id>` | Print job, source runs, item count, report length from DB |
-| `npm run db:studio` | Drizzle Studio (with env) |
+| `npm run db:push` | Drizzle push (loads `.env.local`) |
+| `npm run db:inspect -- <job-id>` | DB row summary |
+| `npm run db:studio` | Drizzle Studio |
 
-## Phase 1A.5 verification (hardening)
+## API (Phase 1B)
 
-1. Apply schema: `npm run db:push`
-2. Run `npm run dev` and `npm run worker` with the same `DATABASE_URL`
-3. `POST /api/jobs` with `{"topic":"..."}`; poll `GET /api/jobs/<id>` until `succeeded` or `failed`
-4. Inspect DB: `npm run db:inspect -- <job-id>` or SQL against `research_jobs`, `research_source_runs`, `research_items`, `reports`
+| Method | Path | Notes |
+|--------|------|--------|
+| GET | `/api/session` | Ensures anonymous cookie |
+| POST | `/api/jobs` | Create job (`{ topic }`), sets cookie if new |
+| GET | `/api/jobs` | List jobs for current session |
+| GET | `/api/jobs/[id]` | Job + report + source runs (403/404 if not your job) |
 
-**Note:** If outbound DNS/network blocks `gamma-api.polymarket.com`, the Polymarket source run may `failed` while HN still succeeds; the job still completes if at least one source works.
+## Sources
 
-## Phase 1A notes
+- **Hacker News** — Algolia API  
+- **Polymarket** — Gamma API (keyword filter)  
+- **Reddit** — `search.json` only, with a descriptive `User-Agent`  
 
-- **DB driver:** `pg` + Drizzle `node-postgres` (Neon pooler URL or any standard Postgres URL).
-- **User model:** single `internal` user row (`ensureInternalUserId`). Phase 1B can add signed-cookie anonymous users without schema churn.
-- **No OpenAI** in this phase; reports are deterministic markdown.
+## Phase 1B notes
+
+- **Auth:** Signed cookie (`SESSION_SECRET`), `users.kind = anonymous`. Legacy `internal` rows from Phase 1A may remain in DB; new users are anonymous.
+- **Reports:** Deterministic markdown (no OpenAI in this phase).
+- If outbound access to a source fails (DNS, rate limit), that source is marked failed; the job still succeeds if at least one source returns data.

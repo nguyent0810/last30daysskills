@@ -1,92 +1,63 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
-type JobStatus = {
-  job: {
-    id: string;
-    topic: string;
-    status: string;
-    error: string | null;
-  };
-  report: string | null;
-  sourceRuns: { source: string; status: string; error: string | null; itemCount: number }[];
-};
-
-export default function Home() {
-  const [topic, setTopic] = useState("typescript");
-  const [jobId, setJobId] = useState<string | null>(null);
-  const [status, setStatus] = useState<JobStatus | null>(null);
+export default function HomePage() {
+  const router = useRouter();
+  const [topic, setTopic] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const poll = useCallback(async (id: string) => {
-    const res = await fetch(`/api/jobs/${id}`);
-    if (!res.ok) {
-      setError(await res.text());
-      return;
-    }
-    const data = (await res.json()) as JobStatus;
-    setStatus(data);
-    if (data.job.status === "queued" || data.job.status === "running") {
-      setTimeout(() => void poll(id), 2000);
-    }
-  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setStatus(null);
     setLoading(true);
     try {
       const res = await fetch("/api/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic }),
+        credentials: "include",
+        body: JSON.stringify({ topic: topic.trim() || "news" }),
       });
       if (!res.ok) {
-        setError(await res.text());
+        const t = await res.text();
+        setError(t || res.statusText);
         return;
       }
-      const data = (await res.json()) as { id: string; status: string };
-      setJobId(data.id);
-      void poll(data.id);
+      const data = (await res.json()) as { id: string };
+      router.push(`/job/${data.id}`);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main>
-      <h1>Research — Phase 1A</h1>
-      <p>Submit a topic. A worker process must be running with DATABASE_URL.</p>
+    <div>
+      <h1>New research</h1>
+      <p className="muted">
+        Enter a topic. A worker process must be running with <code>DATABASE_URL</code>. Results use Hacker
+        News, Polymarket, and public Reddit JSON — no OAuth.
+      </p>
       <form onSubmit={submit}>
-        <label>
-          Topic{" "}
+        <label htmlFor="topic">Topic</label>
+        <div className="form-row">
           <input
+            id="topic"
+            type="text"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            style={{ width: "100%", maxWidth: "24rem" }}
+            placeholder="e.g. Rust programming"
+            autoComplete="off"
           />
-        </label>
-        <div style={{ marginTop: "0.5rem" }}>
+        </div>
+        <div className="form-row">
           <button type="submit" disabled={loading}>
-            {loading ? "Creating…" : "Create job"}
+            {loading ? "Starting…" : "Run research"}
           </button>
         </div>
       </form>
-      {jobId && <p>Job id: {jobId}</p>}
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
-      {status && (
-        <section style={{ marginTop: "1rem" }}>
-          <h2>Status</h2>
-          <pre style={{ whiteSpace: "pre-wrap" }}>{JSON.stringify(status.job, null, 2)}</pre>
-          <h3>Source runs</h3>
-          <pre style={{ whiteSpace: "pre-wrap" }}>{JSON.stringify(status.sourceRuns, null, 2)}</pre>
-          <h3>Report</h3>
-          <pre style={{ whiteSpace: "pre-wrap" }}>{status.report ?? "(not ready)"}</pre>
-        </section>
-      )}
-    </main>
+      {error && <p className="error">{error}</p>}
+    </div>
   );
 }

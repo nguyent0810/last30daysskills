@@ -8,11 +8,10 @@ import {
   jsonb,
 } from "drizzle-orm/pg-core";
 
-/** Phase 1A: single internal user row; Phase 1B will add anonymous cookie-linked rows. */
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
-  /** 'internal' = Phase 1A dev owner; 'anonymous' reserved for cookie sessions */
-  kind: text("kind").notNull().default("internal"),
+  /** `anonymous` = browser session cookie; legacy `internal` rows may exist from Phase 1A. */
+  kind: text("kind").notNull().default("anonymous"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -33,7 +32,7 @@ export const researchSourceRuns = pgTable("research_source_runs", {
   jobId: uuid("job_id")
     .notNull()
     .references(() => researchJobs.id, { onDelete: "cascade" }),
-  source: text("source").notNull(), // hn | polymarket
+  source: text("source").notNull(), // hn | polymarket | reddit
   status: text("status").notNull(), // succeeded | failed
   error: text("error"),
   itemCount: integer("item_count").notNull().default(0),

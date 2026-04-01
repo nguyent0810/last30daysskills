@@ -2,8 +2,121 @@
   box-sizing: border-box;
 }
 body {
-  font-family: system-ui, sans-serif;
+  font-family: system-ui, -apple-system, Segoe UI, sans-serif;
   margin: 0;
-  padding: 1rem;
-  max-width: 48rem;
+  padding: 0;
+  line-height: 1.45;
+  color: #111;
+  background: #fafafa;
+}
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border-bottom: 1px solid #e5e5e5;
+}
+.site-nav {
+  display: flex;
+  gap: 1rem;
+}
+.site-nav a {
+  color: #0b57d0;
+  text-decoration: none;
+}
+.site-nav a:hover {
+  text-decoration: underline;
+}
+.site-main {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 1rem 1rem 2rem;
+}
+.muted {
+  color: #555;
+  font-size: 0.9rem;
+}
+.form-row {
+  margin-top: 0.75rem;
+}
+input[type="text"] {
+  width: 100%;
+  max-width: 28rem;
+  padding: 0.4rem 0.5rem;
+  font-size: 1rem;
+}
+button {
+  padding: 0.45rem 0.85rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.error {
+  color: #b00020;
+  margin-top: 0.5rem;
+}
+.source-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+.source-table th,
+.source-table td {
+  border: 1px solid #ddd;
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+.source-table th {
+  background: #f0f0f0;
+}
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.badge-ok {
+  background: #e6f4ea;
+  color: #137333;
+}
+.badge-fail {
+  background: #fce8e6;
+  color: #c5221f;
+}
+.report-md {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  margin-top: 0.75rem;
+}
+.report-md h1 {
+  font-size: 1.35rem;
+  margin: 0 0 0.75rem;
+}
+.report-md h2 {
+  font-size: 1.1rem;
+  margin: 1rem 0 0.5rem;
+}
+.report-md p,
+.report-md li {
+  margin: 0.35rem 0;
+}
+.report-md ol {
+  padding-left: 1.25rem;
+}
+.history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.history-list li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+.history-list a {
+  color: #0b57d0;
 }

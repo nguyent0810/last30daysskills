@@ -1,14 +1,14 @@
 import type { ScoredItem } from "./types";
 import { sortByScoreDesc } from "./score";
 
-/** Deterministic markdown report (Phase 1A — no LLM). */
+/** Deterministic markdown report (no LLM). */
 export function buildDeterministicReport(topic: string, items: ScoredItem[]): string {
   const sorted = sortByScoreDesc(items);
   const top = sorted.slice(0, 15);
   const lines: string[] = [];
   lines.push(`# Research: ${topic}`);
   lines.push("");
-  lines.push(`_Generated without AI — Phase 1A._`);
+  lines.push(`_Generated without AI — deterministic summary._`);
   lines.push("");
   lines.push("## Top findings");
   lines.push("");
@@ -27,6 +27,7 @@ export function buildDeterministicReport(topic: string, items: ScoredItem[]): st
   lines.push("");
   lines.push("- Hacker News (Algolia API)");
   lines.push("- Polymarket (Gamma API, keyword filter)");
+  lines.push("- Reddit (public `search.json`, User-Agent required)");
   return lines.join("\n");
 }
 

@@ -2,8 +2,13 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { reports, researchJobs, researchSourceRuns } from "@/lib/db/schema";
+import { getAnonymousUserIdIfPresent } from "@/lib/auth/anonymous";
 
 export const dynamic = "force-dynamic";
+
+function sameUser(a: string, b: string): boolean {
+  return a.replace(/-/g, "").toLowerCase() === b.replace(/-/g, "").toLowerCase();
+}
 
 export async function GET(
   _request: Request,
@@ -14,6 +19,11 @@ export async function GET(
     return NextResponse.json({ error: "Missing id" }, { status: 400 });
   }
 
+  const userId = await getAnonymousUserIdIfPresent();
+  if (!userId) {
+    return NextResponse.json({ error: "No session" }, { status: 401 });
+  }
+
   const db = getDb();
   const [job] = await db
     .select()
@@ -22,6 +32,10 @@ export async function GET(
     .limit(1);
 
   if (!job) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (!sameUser(job.userId, userId)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
