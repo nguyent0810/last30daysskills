@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { GeminiSummaryPanel } from "@/components/GeminiSummaryPanel";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { ReportModeApi } from "@/lib/report-mode";
 import { reportModeLabel } from "@/lib/report-mode";
@@ -27,6 +28,7 @@ type JobPayload = {
   report: string | null;
   reportMode: ReportModeApi;
   sourceRuns: SourceRun[];
+  geminiAvailable?: boolean;
 };
 
 function sourceLabel(s: string): string {
@@ -267,6 +269,12 @@ export default function JobPage() {
       ) : (
         <p className="muted">{terminal ? "No report was stored for this job." : "Report appears when the job finishes."}</p>
       )}
+
+      <GeminiSummaryPanel
+        jobId={id}
+        enabled={Boolean(j.status === "succeeded" && data.report?.trim())}
+        geminiConfigured={data.geminiAvailable ?? false}
+      />
     </div>
   );
 }

@@ -506,3 +506,56 @@ code {
   padding: 0.1rem 0.3rem;
   border-radius: 4px;
 }
+
+.gemini-panel {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.gemini-panel--muted {
+  opacity: 0.95;
+}
+
+.gemini-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.25rem;
+  align-items: flex-end;
+  margin-top: 0.75rem;
+}
+
+.gemini-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 10rem;
+}
+
+.gemini-field--action {
+  min-width: auto;
+  justify-content: flex-end;
+}
+
+.gemini-select {
+  padding: 0.45rem 0.55rem;
+  font-size: 0.95rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  font-family: inherit;
+}
+
+.gemini-error {
+  margin-top: 0.75rem;
+  padding: 0.55rem 0.65rem;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: var(--radius);
+  color: var(--color-warn-text);
+  font-size: 0.9rem;
+}
+
+.gemini-output {
+  margin-top: 1rem;
+}

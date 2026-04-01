@@ -17,6 +17,8 @@ MVP stack: **Next.js** on **Vercel**, **worker** on **Railway**, **Postgres** on
 | `DATABASE_URL` | Yes | Neon pooled URL; used by Route Handlers only (server-side). |
 | `SESSION_SECRET` | Yes | Min 16 chars. `openssl rand -hex 32` |
 | `NODE_ENV` | Auto | Vercel sets `production`. |
+| `GEMINI_API_KEY` | No | Optional transient “AI summary” on the job page only; not stored; worker does not use it. |
+| `GEMINI_MODEL` | No | Default `gemini-2.0-flash`. |
 
 Do **not** expose `DATABASE_URL` or `SESSION_SECRET` to the client (they are not prefixed with `NEXT_PUBLIC_`).
 

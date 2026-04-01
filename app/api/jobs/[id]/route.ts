@@ -8,6 +8,10 @@ import { toReportModeApi } from "@/lib/report-mode";
 
 export const dynamic = "force-dynamic";
 
+function geminiConfigured(): boolean {
+  return Boolean(process.env.GEMINI_API_KEY?.trim());
+}
+
 function sameUser(a: string, b: string): boolean {
   return a.replace(/-/g, "").toLowerCase() === b.replace(/-/g, "").toLowerCase();
 }
@@ -65,6 +69,7 @@ export async function GET(
       report: report?.content ?? null,
       reportMode: toReportModeApi(report?.reportMode),
       sourceRuns: runs,
+      geminiAvailable: geminiConfigured(),
     });
   } catch (e) {
     return jsonFromRouteError(e, "[api/jobs/[id]]");
