@@ -1,5 +1,8 @@
 /** Deterministic hero copy for the job page — no LLM. */
 
+import type { ItemText } from "./hero-keywords";
+import { formatKeywordPhrase, keywordsFromTopItems } from "./hero-keywords";
+
 export type SourceRunLike = {
   source: string;
   status: string;
@@ -15,49 +18,78 @@ export function computeHeroMetrics(runs: SourceRunLike[]) {
   return { totalItems, failed, succeededWithItems, succeededNoItems };
 }
 
-/** Short topic phrase for “Strong signal around …” */
+/** Short topic phrase */
 function topicPhrase(topic: string): string {
   const t = topic.trim();
   if (!t) return "this topic";
   return t.length > 72 ? `${t.slice(0, 69)}…` : t;
 }
 
+function kwHint(topItems: ItemText[] | undefined): string {
+  if (!topItems?.length) return "";
+  const k = keywordsFromTopItems(topItems);
+  return formatKeywordPhrase(k);
+}
+
 /**
- * Main framing line (product voice).
+ * Main framing line — concrete, uses 1–2 tokens from top results when available.
  */
-export function mainInsightLine(topic: string, runs: SourceRunLike[]): string {
+export function mainInsightLine(
+  topic: string,
+  runs: SourceRunLike[],
+  topItems?: ItemText[]
+): string {
   if (runs.length === 0) {
     return "Waiting for source results…";
   }
 
   const { totalItems, failed, succeededWithItems, succeededNoItems } = computeHeroMetrics(runs);
   const phrase = topicPhrase(topic);
+  const kw = kwHint(topItems);
 
   if (totalItems === 0) {
-    return "Low signal for this topic";
-  }
-
-  if (failed === 0 && totalItems >= 10 && succeededWithItems >= 2) {
-    return `Strong signal around ${phrase}`;
-  }
-
-  if (failed === 0 && totalItems >= 6) {
-    return `Strong signal around ${phrase}`;
+    return `Nothing turned up for “${phrase}” this run — try a slightly broader phrasing.`;
   }
 
   if (failed > 0 && totalItems > 0) {
-    return "Mixed signal with useful technical discussion";
+    if (kw) {
+      return `You still get usable links — ${kw} shows up in what we could fetch.`;
+    }
+    return `Partial fetch, but there’s enough on “${phrase}” to skim.`;
+  }
+
+  if (failed === 0 && totalItems >= 10 && succeededWithItems >= 2) {
+    if (kw) {
+      return `Busy snapshot: ${kw} keeps appearing across ${succeededWithItems} feeds for “${phrase}”.`;
+    }
+    return `${totalItems} on-topic links across ${succeededWithItems} sources for “${phrase}” — worth a real read-through.`;
+  }
+
+  if (failed === 0 && totalItems >= 6) {
+    if (kw) {
+      return `Clear threads in the results — ${kw} anchors most of what you’ll see.`;
+    }
+    return `Solid batch for “${phrase}” — ${totalItems} items to scan.`;
   }
 
   if (succeededNoItems > 0 && succeededWithItems > 0) {
-    return "Mixed signal with useful technical discussion";
+    if (kw) {
+      return `One feed was quiet; the other delivered ${kw} and related picks.`;
+    }
+    return `Uneven pull — one source hit, one didn’t — still enough to review.`;
   }
 
   if (totalItems > 0 && totalItems < 6) {
-    return "Some signal for this topic";
+    if (kw) {
+      return `A small set, but it clusters on ${kw}.`;
+    }
+    return `Just a handful of matches for “${phrase}” — quick pass.`;
   }
 
-  return "Mixed signal with useful technical discussion";
+  if (kw) {
+    return `Readable mix — ${kw} is the through-line in what came back.`;
+  }
+  return `There’s enough on “${phrase}” to scan, with a few angles to compare.`;
 }
 
 function plural(n: number, one: string, many: string): string {
@@ -91,7 +123,7 @@ export function factualInsightLine(runs: SourceRunLike[]): string {
 
 export function runningHeroLines(topic: string): { main: string; factual: string } {
   return {
-    main: `Research in progress for ${topicPhrase(topic)}`,
-    factual: "Sources and report will appear as the run completes.",
+    main: `Pulling fresh links for “${topicPhrase(topic)}”…`,
+    factual: "Sources and report will fill in as each step finishes.",
   };
 }

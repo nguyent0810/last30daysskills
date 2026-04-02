@@ -792,6 +792,14 @@ code {
   font-size: 1.45rem;
 }
 
+.report-expand {
+  margin-top: 1rem;
+}
+
+.report-expand__btn {
+  font-size: 0.9rem;
+}
+
 .product-surface {
   background: var(--color-surface);
   border: 1px solid var(--color-border);

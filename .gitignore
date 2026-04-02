@@ -21,3 +21,6 @@ drizzle/meta/
 # misc
 .DS_Store
 *.tsbuildinfo
+
+# Cursor IDE
+.cursor/

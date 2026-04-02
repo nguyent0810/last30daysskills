@@ -9,21 +9,33 @@ const run = (
 ) => ({ source, status, error, itemCount });
 
 describe("mainInsightLine", () => {
-  it("low signal when no items", () => {
-    expect(mainInsightLine("Rust", [run("hn", "succeeded", 0), run("reddit", "failed", 0, "403")])).toBe(
-      "Low signal for this topic"
+  it("no items — concrete low outcome", () => {
+    expect(mainInsightLine("Rust", [run("hn", "succeeded", 0), run("reddit", "failed", 0, "403")])).toMatch(
+      /Nothing turned up/
     );
   });
 
-  it("strong signal when volume and no failures", () => {
+  it("high volume without item text — counts forward", () => {
     const runs = [run("hn", "succeeded", 6), run("reddit", "succeeded", 5)];
-    expect(mainInsightLine("Rust async", runs)).toContain("Strong signal");
-    expect(mainInsightLine("Rust async", runs)).toContain("Rust async");
+    const line = mainInsightLine("Rust async", runs);
+    expect(line).toMatch(/11 on-topic links/);
+    expect(line).toContain("Rust async");
   });
 
-  it("mixed when failures but some items", () => {
+  it("uses keywords from top items when provided", () => {
+    const runs = [run("hn", "succeeded", 6), run("reddit", "succeeded", 5)];
+    const items = [
+      { title: "Tokio async runtime deep dive", url: "", snippet: "", score: 9, source: "hn" },
+      { title: "Rust futures explained", url: "", snippet: "", score: 8, source: "hn" },
+    ];
+    const line = mainInsightLine("Rust async", runs, items);
+    expect(line.toLowerCase()).toMatch(/tokio|rust|async/);
+    expect(line).not.toMatch(/strong signal/i);
+  });
+
+  it("partial failure with results — plain language", () => {
     const runs = [run("hn", "succeeded", 5), run("reddit", "failed", 0, "blocked")];
-    expect(mainInsightLine("X", runs)).toBe("Mixed signal with useful technical discussion");
+    expect(mainInsightLine("X", runs)).toMatch(/Partial fetch|usable links/);
   });
 });
 

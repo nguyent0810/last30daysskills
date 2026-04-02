@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { desc, eq } from "drizzle-orm";
 import { jsonFromRouteError } from "@/lib/api/route-error-response";
 import { getDb } from "@/lib/db";
-import { reports, researchItems, researchJobs, researchSourceRuns } from "@/lib/db/schema";
+import { reports, researchItems, researches, researchJobs, researchSourceRuns } from "@/lib/db/schema";
 import { getAnonymousUserIdIfPresent } from "@/lib/auth/anonymous";
+import { resolveJobDetailThread } from "@/lib/jobs/job-detail-thread";
 import { toReportModeApi } from "@/lib/report-mode";
 
 export const dynamic = "force-dynamic";
@@ -71,15 +72,46 @@ export async function GET(
       .orderBy(desc(researchItems.score))
       .limit(25);
 
+    let researchRow: {
+      id: string;
+      topic: string;
+      displayTitle: string | null;
+      userId: string;
+    } | null = null;
+    if (job.researchId != null) {
+      const [r] = await db
+        .select({
+          id: researches.id,
+          topic: researches.topic,
+          displayTitle: researches.displayTitle,
+          userId: researches.userId,
+        })
+        .from(researches)
+        .where(eq(researches.id, job.researchId))
+        .limit(1);
+      researchRow = r
+        ? {
+            id: r.id,
+            topic: r.topic,
+            displayTitle: r.displayTitle ?? null,
+            userId: r.userId,
+          }
+        : null;
+    }
+
+    const thread = resolveJobDetailThread(job.researchId ?? null, researchRow, userId);
+
     return NextResponse.json({
       job: {
         id: job.id,
+        researchId: job.researchId ?? null,
         topic: job.topic,
         status: job.status,
         error: job.error,
         createdAt: job.createdAt,
         updatedAt: job.updatedAt,
       },
+      thread,
       report: report?.content ?? null,
       reportMode: toReportModeApi(report?.reportMode),
       sourceRuns: runs,

@@ -1,0 +1,463 @@
+"use client";
+
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { StatusBadge } from "@/components/StatusBadge";
+import type { ReportModeApi } from "@/lib/report-mode";
+import { reportModeLabel } from "@/lib/report-mode";
+
+type RunRow = {
+  id: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  reportMode: ReportModeApi;
+};
+
+type Payload = {
+  research: {
+    id: string;
+    topic: string;
+    displayTitle?: string | null;
+    archivedAt?: string | null;
+    createdAt: string;
+    updatedAt: string;
+  };
+  runs: RunRow[];
+  sincePreviousRun?: { newLinkCount: number } | null;
+};
+
+function formatTime(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
+export default function ResearchPage() {
+  const params = useParams();
+  const router = useRouter();
+  const id = typeof params.id === "string" ? params.id : "";
+  const [data, setData] = useState<Payload | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [rerunLoading, setRerunLoading] = useState(false);
+  const [rerunError, setRerunError] = useState<string | null>(null);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [renameBusy, setRenameBusy] = useState(false);
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [archiveBusy, setArchiveBusy] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!id) return;
+    const res = await fetch(`/api/research/${id}`, { credentials: "include" });
+    if (res.status === 401) {
+      setError("No session. Open the home page once, then return here.");
+      return;
+    }
+    if (!res.ok) {
+      const t = await res.text();
+      setError(t || res.statusText);
+      return;
+    }
+    setData((await res.json()) as Payload);
+    setError(null);
+    setRerunError(null);
+    setRenameOpen(false);
+    setRenameError(null);
+    setArchiveError(null);
+  }, [id]);
+
+  async function setArchived(archived: boolean) {
+    if (!id) return;
+    setArchiveBusy(true);
+    setArchiveError(null);
+    try {
+      const res = await fetch(`/api/research/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ archived }),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        let msg = text || res.statusText;
+        try {
+          const j = JSON.parse(text) as { error?: string };
+          if (j.error) msg = j.error;
+        } catch {
+          /* plain */
+        }
+        setArchiveError(msg);
+        return;
+      }
+      const j = JSON.parse(text) as { archivedAt: string | null };
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              research: { ...prev.research, archivedAt: j.archivedAt },
+            }
+          : prev
+      );
+    } finally {
+      setArchiveBusy(false);
+    }
+  }
+
+  function openRename() {
+    if (!data) return;
+    setRenameDraft(data.research.displayTitle ?? "");
+    setRenameError(null);
+    setRenameOpen(true);
+  }
+
+  function cancelRename() {
+    setRenameOpen(false);
+    setRenameError(null);
+  }
+
+  async function saveRename() {
+    if (!id) return;
+    const trimmed = renameDraft.trim();
+    if (trimmed.length === 0) {
+      setRenameError("Enter a non-empty title, or use “Remove custom title” to clear.");
+      return;
+    }
+    setRenameBusy(true);
+    setRenameError(null);
+    try {
+      const res = await fetch(`/api/research/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ displayTitle: trimmed }),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        let msg = text || res.statusText;
+        try {
+          const j = JSON.parse(text) as { error?: string };
+          if (j.error) msg = j.error;
+        } catch {
+          /* plain */
+        }
+        setRenameError(msg);
+        return;
+      }
+      const j = JSON.parse(text) as { displayTitle: string | null };
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              research: { ...prev.research, displayTitle: j.displayTitle },
+            }
+          : prev
+      );
+      setRenameOpen(false);
+    } finally {
+      setRenameBusy(false);
+    }
+  }
+
+  async function clearDisplayTitle() {
+    if (!id) return;
+    setRenameBusy(true);
+    setRenameError(null);
+    try {
+      const res = await fetch(`/api/research/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ displayTitle: null }),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        let msg = text || res.statusText;
+        try {
+          const j = JSON.parse(text) as { error?: string };
+          if (j.error) msg = j.error;
+        } catch {
+          /* plain */
+        }
+        setRenameError(msg);
+        return;
+      }
+      const j = JSON.parse(text) as { displayTitle: string | null };
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              research: { ...prev.research, displayTitle: j.displayTitle },
+            }
+          : prev
+      );
+      setRenameOpen(false);
+    } finally {
+      setRenameBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function rerunTopic() {
+    if (!id) return;
+    setRerunLoading(true);
+    setRerunError(null);
+    try {
+      const res = await fetch("/api/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ researchId: id }),
+      });
+      if (!res.ok) {
+        const t = await res.text();
+        let msg = t || res.statusText;
+        try {
+          const j = JSON.parse(t) as { error?: string };
+          if (j.error) msg = j.error;
+        } catch {
+          /* plain */
+        }
+        setRerunError(msg);
+        return;
+      }
+      const j = (await res.json()) as { id: string };
+      router.push(`/job/${j.id}`);
+    } finally {
+      setRerunLoading(false);
+    }
+  }
+
+  if (!id) {
+    return (
+      <div className="page-shell">
+        <p className="error">Invalid link.</p>
+        <Link href="/">Home</Link>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page-shell">
+        <p className="breadcrumb">
+          <Link href="/">Home</Link>
+          {" · "}
+          <Link href="/history">History</Link>
+        </p>
+        <p className="error">{error}</p>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="page-shell">
+        <p className="breadcrumb">
+          <Link href="/">Home</Link>
+          {" · "}
+          <Link href="/history">History</Link>
+        </p>
+        <div className="loading-block muted">Loading thread…</div>
+      </div>
+    );
+  }
+
+  const r = data.research;
+  const threadLabel = r.displayTitle?.trim() || r.topic;
+  const isArchived = r.archivedAt != null && r.archivedAt.length > 0;
+
+  return (
+    <div className="page-shell">
+      <p className="breadcrumb">
+        <Link href="/">Home</Link>
+        {" · "}
+        <Link href="/history">History</Link>
+        {" · "}
+        <span className="muted">Thread</span>
+      </p>
+
+      {isArchived ? (
+        <div
+          className="muted"
+          style={{
+            marginTop: "0.5rem",
+            marginBottom: "0.25rem",
+            padding: "0.65rem 0.85rem",
+            borderRadius: "6px",
+            border: "1px solid var(--border, #ccc)",
+            background: "var(--surface-muted, rgba(0,0,0,0.04))",
+            fontSize: "0.92rem",
+          }}
+        >
+          <span style={{ fontWeight: 600 }}>This thread is archived.</span> Hidden from History until you unarchive or start a new run.
+          <div style={{ marginTop: "0.5rem" }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={archiveBusy}
+              onClick={() => void setArchived(false)}
+            >
+              {archiveBusy ? "Updating…" : "Unarchive"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {archiveError ? <p className="error" style={{ marginTop: "0.5rem" }}>{archiveError}</p> : null}
+
+      <header style={{ marginTop: "0.35rem" }}>
+        <h1 className="page-title" style={{ marginBottom: "0.35rem" }}>
+          {threadLabel}
+        </h1>
+        <p className="muted" style={{ margin: 0, fontSize: "0.9rem", maxWidth: "38rem" }}>
+          Continue this thread here—start a new run or open a saved run below.
+        </p>
+      </header>
+
+      <div style={{ marginTop: "1rem" }}>
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={rerunLoading}
+          onClick={() => void rerunTopic()}
+        >
+          {rerunLoading ? "Starting your run…" : "Start new run"}
+        </button>
+        {rerunError ? <p className="error" style={{ marginTop: "0.5rem" }}>{rerunError}</p> : null}
+      </div>
+
+      {renameOpen ? (
+        <div style={{ marginTop: "1.25rem", paddingTop: "1.25rem", borderTop: "1px solid var(--border, #e5e5e5)" }}>
+          <label htmlFor="thread-rename-input" className="muted" style={{ display: "block", fontSize: "0.88rem", marginBottom: "0.35rem" }}>
+            Display title (your topic for new runs stays the same)
+          </label>
+          <input
+            id="thread-rename-input"
+            type="text"
+            style={{
+              width: "100%",
+              maxWidth: "32rem",
+              padding: "0.5rem 0.65rem",
+              fontSize: "1rem",
+              borderRadius: "6px",
+              border: "1px solid var(--border, #ccc)",
+            }}
+            maxLength={500}
+            value={renameDraft}
+            disabled={renameBusy}
+            onChange={(e) => setRenameDraft(e.target.value)}
+            placeholder={r.topic}
+            autoFocus
+          />
+          <div style={{ marginTop: "0.65rem", display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
+            <button type="button" className="btn btn-primary" disabled={renameBusy} onClick={() => void saveRename()}>
+              {renameBusy ? "Saving…" : "Save"}
+            </button>
+            <button type="button" className="btn btn-secondary" disabled={renameBusy} onClick={() => cancelRename()}>
+              Cancel
+            </button>
+            {r.displayTitle != null && r.displayTitle.trim().length > 0 ? (
+              <button type="button" className="btn btn-secondary" disabled={renameBusy} onClick={() => void clearDisplayTitle()}>
+                Remove custom title
+              </button>
+            ) : null}
+          </div>
+          <p className="muted" style={{ marginTop: "0.5rem", fontSize: "0.85rem", maxWidth: "36rem" }}>
+            Original topic: <span style={{ fontStyle: "italic" }}>{r.topic}</span>
+          </p>
+          {renameError ? <p className="error" style={{ marginTop: "0.5rem" }}>{renameError}</p> : null}
+        </div>
+      ) : (
+        <>
+          {data.sincePreviousRun ? (
+            <p className="section-hint muted" style={{ marginTop: "0.85rem", marginBottom: 0 }}>
+              {data.sincePreviousRun.newLinkCount} new links since last run
+            </p>
+          ) : null}
+          <p className="muted" style={{ marginTop: data.sincePreviousRun ? "0.35rem" : "0.85rem", fontSize: "0.88rem", maxWidth: "38rem" }}>
+            Open a saved run below for its report and sources. You can rename the thread or archive it from the links below.
+          </p>
+          <div
+            style={{
+              marginTop: "0.65rem",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "0.35rem 0.75rem",
+              alignItems: "center",
+            }}
+          >
+            <button type="button" className="btn btn-ghost" onClick={() => openRename()}>
+              Rename thread
+            </button>
+            {!isArchived ? (
+              <>
+                <span className="muted" style={{ fontSize: "0.8rem", userSelect: "none" }} aria-hidden>
+                  ·
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  disabled={archiveBusy}
+                  onClick={() => void setArchived(true)}
+                >
+                  {archiveBusy ? "Updating…" : "Archive thread"}
+                </button>
+              </>
+            ) : null}
+          </div>
+        </>
+      )}
+
+      <h2 className="section-title" style={{ marginTop: "2rem", paddingTop: "0.25rem" }}>
+        Saved runs
+      </h2>
+      {data.runs.length === 0 ? (
+        <div style={{ marginTop: "0.5rem", maxWidth: "38rem" }}>
+          <p className="muted" style={{ margin: 0, fontWeight: 600 }}>
+            No runs yet
+          </p>
+          <p className="muted" style={{ marginTop: "0.45rem", lineHeight: 1.5 }}>
+            Use Start new run above to fetch sources and build a report for this topic. Come back here anytime to open saved runs for this thread.
+          </p>
+        </div>
+      ) : (
+        <ul className="history-list" style={{ marginTop: "0.65rem" }}>
+          {data.runs.map((run, runIndex) => (
+            <li key={run.id}>
+              <Link href={`/job/${run.id}`} className="history-card" style={{ display: "block" }}>
+                <p className="history-card-title" style={{ marginBottom: "0.2rem" }}>
+                  Run · {formatTime(run.createdAt)}
+                </p>
+                <div className="history-card-meta" style={{ gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+                  <StatusBadge status={run.status} />
+                  <span className="report-mode-pill">{reportModeLabel(run.reportMode)}</span>
+                  {data.runs.length > 1 && runIndex === 0 ? (
+                    <span
+                      className="muted"
+                      style={{
+                        fontSize: "0.7rem",
+                        opacity: 0.55,
+                        fontWeight: 400,
+                        letterSpacing: "0.02em",
+                      }}
+                    >
+                      Latest
+                    </span>
+                  ) : null}
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}

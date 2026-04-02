@@ -25,7 +25,7 @@ export function EditorialDigest({ items }: { items: DigestItem[] }) {
     <section className="digest" aria-label="At a glance">
       <h2 className="section-title">At a glance</h2>
       <p className="section-hint muted">
-        Quick scan of top results by theme. For the full narrative, use the report below.
+        Two columns — how-to and tooling vs. discussion. Open the full report when you want the long version.
       </p>
       <div className="digest__grid">
         {groups.map((g) => {

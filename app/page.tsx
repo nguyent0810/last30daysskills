@@ -43,7 +43,7 @@ export default function HomePage() {
         setError(msg);
         return;
       }
-      const data = (await res.json()) as { id: string };
+      const data = (await res.json()) as { id: string; researchId?: string };
       router.push(`/job/${data.id}`);
     } finally {
       setLoading(false);
@@ -52,12 +52,20 @@ export default function HomePage() {
 
   return (
     <div className="product-hero-block">
-      <h1 className="page-title">New research</h1>
-      <p className="page-lead muted">
-        Enter a topic. We aggregate public signals from Hacker News, Polymarket, and Reddit — no sign-in
-        required. A background worker completes the run in the background.
-      </p>
-      <form className="product-surface" onSubmit={submit}>
+      <h1 className="page-title">Research a topic</h1>
+      <div style={{ maxWidth: "40rem" }}>
+        <p className="page-lead muted" style={{ marginBottom: 0 }}>
+          A topic is what you want to learn about—a question or subject in plain language.
+        </p>
+        <p className="muted" style={{ marginTop: "0.65rem", marginBottom: 0, lineHeight: 1.5 }}>
+          We gather public signals from Hacker News, Polymarket, and Reddit. Each run opens its own page
+          with a report and sources. History lists your threads; open one to revisit saved runs.
+        </p>
+        <p className="muted" style={{ marginTop: "0.65rem", marginBottom: 0, lineHeight: 1.5 }}>
+          No sign-in. Data is kept for this browser session only.
+        </p>
+      </div>
+      <form className="product-surface" onSubmit={submit} style={{ marginTop: "1.25rem" }}>
         <label className="field-label" htmlFor="topic">
           Topic
         </label>
@@ -66,7 +74,7 @@ export default function HomePage() {
           className="topic-input"
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
-          placeholder="What do you want a snapshot of? e.g. “Stable diffusion licensing news”"
+          placeholder="e.g. Stable diffusion licensing news"
           autoComplete="off"
           disabled={loading}
           maxLength={500}
@@ -89,16 +97,17 @@ export default function HomePage() {
         </div>
         <div className="form-row btn-row">
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Starting research…" : "Run research"}
+            {loading ? "Starting your run…" : "Run research"}
           </button>
           <Link href="/history" className="btn btn-ghost">
-            View history
+            History
           </Link>
         </div>
       </form>
       {loading && (
         <p className="loading-block muted">
-          Creating your job<span className="loading-dots" />
+          Starting your run…
+          <span className="loading-dots" />
         </p>
       )}
       {error && <p className="error">{error}</p>}

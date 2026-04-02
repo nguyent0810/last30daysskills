@@ -1,9 +1,8 @@
 /**
- * Short scan-layer digest: bucket items by simple keyword heuristics.
- * Not a second report — cap visible rows per section when rendering.
+ * Short scan-layer digest: two buckets only — fewer columns, clearer scan.
  */
 
-export type DigestBucketId = "tutorials" | "discussions" | "tools" | "other";
+export type DigestBucketId = "learn" | "discuss";
 
 export type DigestItem = {
   id: string;
@@ -14,25 +13,21 @@ export type DigestItem = {
   source: string;
 };
 
-const TUTORIAL = /tutorial|guide|how\s*to|learn|introduction|getting\s*started|course|documentation|docs?\b/i;
-const DISCUSSION = /discussion|thread|debate|opinion|\bask\b|ama|thoughts|\bwhy\b|what\s+do\s+you/i;
-const TOOLS = /tool|library|framework|release|launch|\brepo\b|github|api\b|sdk|\bapp\b|plugin|package/i;
+/** Tutorials, docs, tools, releases — “read / build”. Everything else is conversation & misc. */
+const LEARN_BUILD =
+  /tutorial|guide|how\s*to|learn|introduction|getting\s*started|course|documentation|docs?\b|tool|library|framework|release|launch|\brepo\b|github|api\b|sdk|\bapp\b|plugin|package/i;
 
 export function bucketForItem(title: string, snippet: string): DigestBucketId {
   const text = `${title} ${snippet}`;
-  if (TUTORIAL.test(text)) return "tutorials";
-  if (DISCUSSION.test(text)) return "discussions";
-  if (TOOLS.test(text)) return "tools";
-  return "other";
+  if (LEARN_BUILD.test(text)) return "learn";
+  return "discuss";
 }
 
-const BUCKET_ORDER: DigestBucketId[] = ["tutorials", "discussions", "tools", "other"];
+const BUCKET_ORDER: DigestBucketId[] = ["learn", "discuss"];
 
 const BUCKET_LABEL: Record<DigestBucketId, string> = {
-  tutorials: "Tutorials & guides",
-  discussions: "Discussions",
-  tools: "Tools & launches",
-  other: "More highlights",
+  learn: "Guides & tools",
+  discuss: "Threads & conversation",
 };
 
 export function bucketLabel(id: DigestBucketId): string {

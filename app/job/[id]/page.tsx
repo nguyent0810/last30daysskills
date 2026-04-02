@@ -9,6 +9,8 @@ import { GeminiSummaryPanel } from "@/components/GeminiSummaryPanel";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { DigestItem } from "@/lib/job-page/editorial-digest";
 import { factualInsightLine, mainInsightLine, runningHeroLines } from "@/lib/job-page/hero-insight";
+import { buildReuseMarkdown } from "@/lib/job-page/build-reuse-markdown";
+import { buildReportPreview } from "@/lib/job-page/report-preview";
 import type { ReportModeApi } from "@/lib/report-mode";
 import { reportModeLabel } from "@/lib/report-mode";
 import {
@@ -16,6 +18,7 @@ import {
   sourceCardStatusLabel,
   sourceInterpretation,
 } from "@/lib/job-page/source-interpretation";
+import { threadOrientationForUi } from "@/lib/jobs/job-detail-thread";
 
 type SourceRun = {
   source: string;
@@ -27,12 +30,14 @@ type SourceRun = {
 type JobPayload = {
   job: {
     id: string;
+    researchId: string | null;
     topic: string;
     status: string;
     error: string | null;
     createdAt: string;
     updatedAt: string;
   };
+  thread: { id: string; topic: string; displayTitle: string | null } | null;
   report: string | null;
   reportMode: ReportModeApi;
   sourceRuns: SourceRun[];
@@ -57,6 +62,8 @@ export default function JobPage() {
   const [error, setError] = useState<string | null>(null);
   const [copyMsg, setCopyMsg] = useState<string | null>(null);
   const [rerunLoading, setRerunLoading] = useState(false);
+  const [rerunError, setRerunError] = useState<string | null>(null);
+  const [reportExpanded, setReportExpanded] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -79,14 +86,19 @@ export default function JobPage() {
       }
       return;
     }
-    const json = (await res.json()) as JobPayload;
-    setData(json);
+    const raw = (await res.json()) as JobPayload & { thread?: JobPayload["thread"] };
+    setData({ ...raw, thread: raw.thread ?? null });
     setError(null);
+    setRerunError(null);
   }, [id]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    setReportExpanded(false);
+  }, [id, data?.report]);
 
   useEffect(() => {
     if (!data) return;
@@ -102,10 +114,24 @@ export default function JobPage() {
     return SOURCE_ORDER.map((key) => map.get(key)).filter(Boolean) as SourceRun[];
   }, [data?.sourceRuns]);
 
-  async function copyReport() {
-    if (!data?.report) return;
+  const reportPreview = useMemo(
+    () => (data?.report ? buildReportPreview(data.report) : null),
+    [data?.report]
+  );
+
+  async function copyForReuse() {
+    if (!data) return;
+    const reportTrim = data.report?.trim() ?? "";
+    const items = data.items ?? [];
+    if (!reportTrim && items.length === 0) return;
+    const md = buildReuseMarkdown({
+      topic: data.job.topic,
+      createdAt: data.job.createdAt,
+      report: data.report,
+      items: items.map((it) => ({ title: it.title, url: it.url })),
+    });
     try {
-      await navigator.clipboard.writeText(data.report);
+      await navigator.clipboard.writeText(md);
       setCopyMsg("Copied to clipboard");
       setTimeout(() => setCopyMsg(null), 2500);
     } catch {
@@ -118,16 +144,28 @@ export default function JobPage() {
     if (!data?.job.topic) return;
     setRerunLoading(true);
     setCopyMsg(null);
+    setRerunError(null);
     try {
+      const body =
+        data.job.researchId != null
+          ? { researchId: data.job.researchId }
+          : { topic: data.job.topic };
       const res = await fetch("/api/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ topic: data.job.topic }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const t = await res.text();
-        setError(t || "Could not start a new run");
+        let msg = t || "Could not start your run";
+        try {
+          const j = JSON.parse(t) as { error?: string };
+          if (j.error) msg = j.error;
+        } catch {
+          /* plain */
+        }
+        setRerunError(msg);
         return;
       }
       const j = (await res.json()) as { id: string };
@@ -139,9 +177,13 @@ export default function JobPage() {
 
   if (!id) {
     return (
-      <div>
-        <p className="error">Invalid job link.</p>
-        <Link href="/">Home</Link>
+      <div className="page-shell">
+        <p className="breadcrumb">
+          <Link href="/">Home</Link>
+          {" · "}
+          <Link href="/history">History</Link>
+        </p>
+        <p className="error">Invalid run link.</p>
       </div>
     );
   }
@@ -167,21 +209,32 @@ export default function JobPage() {
           {" · "}
           <Link href="/history">History</Link>
         </p>
-        <div className="loading-block muted">Loading job…</div>
+        <div className="loading-block muted">Loading run…</div>
       </div>
     );
   }
 
   const j = data.job;
   const terminal = j.status === "succeeded" || j.status === "failed";
-  const canCopy = Boolean(data.report && j.status === "succeeded");
+  const reportTrim = (data.report?.trim() ?? "").length > 0;
+  const hasItems = (data.items?.length ?? 0) > 0;
+  const canCopyForReuse = terminal && (reportTrim || hasItems);
   const digestItems = data.items ?? [];
   const showDigest = terminal && j.status === "succeeded" && digestItems.length > 0;
 
   const running = j.status === "queued" || j.status === "running";
   const heroRunning = runningHeroLines(j.topic);
-  const heroMain = running ? heroRunning.main : mainInsightLine(j.topic, orderedRuns);
+  const heroTopItems =
+    digestItems.length > 0
+      ? digestItems.map((it) => ({ title: it.title, snippet: it.snippet }))
+      : undefined;
+  const heroMain = running ? heroRunning.main : mainInsightLine(j.topic, orderedRuns, heroTopItems);
   const heroFactual = running ? heroRunning.factual : factualInsightLine(orderedRuns);
+
+  const threadUi = threadOrientationForUi(data.thread);
+
+  const reportMarkdown =
+    data.report && (reportExpanded || !reportPreview?.hasMore) ? data.report : (reportPreview?.collapsed ?? data.report ?? null);
 
   return (
     <div className="page-shell job-page">
@@ -189,6 +242,12 @@ export default function JobPage() {
         <Link href="/">Home</Link>
         {" · "}
         <Link href="/history">History</Link>
+        {j.researchId ? (
+          <>
+            {" · "}
+            <Link href={`/research/${j.researchId}`}>Thread</Link>
+          </>
+        ) : null}
       </p>
 
       <div className="job-hero">
@@ -197,6 +256,13 @@ export default function JobPage() {
       </div>
 
       <h1 className="page-title job-page__title">{j.topic}</h1>
+
+      {threadUi ? (
+        <p className="muted" style={{ marginTop: "0.3rem", fontSize: "0.92rem" }}>
+          Thread:{" "}
+          <Link href={threadUi.href}>{threadUi.label}</Link>
+        </p>
+      ) : null}
 
       <div className="job-meta">
         <StatusBadge status={j.status} />
@@ -208,7 +274,7 @@ export default function JobPage() {
 
       {j.error && (
         <p className="error job-page__job-error">
-          <strong>Job could not complete:</strong> {j.error}
+          <strong>This run could not complete:</strong> {j.error}
         </p>
       )}
 
@@ -216,7 +282,7 @@ export default function JobPage() {
       <p className="section-hint muted">Each source runs on its own. Partial failures are OK if another source delivered items.</p>
 
       {!terminal && orderedRuns.length === 0 ? (
-        <p className="muted">Waiting for the worker…</p>
+        <p className="muted">Gathering sources…</p>
       ) : (
         <div className="source-cards">
           {orderedRuns.map((r) => {
@@ -238,7 +304,7 @@ export default function JobPage() {
                     </>
                   )}
                 </div>
-                <p className="source-card__interpret">{sourceInterpretation(r)}</p>
+                <p className="source-card__interpret">{sourceInterpretation(r, j.topic)}</p>
               </div>
             );
           })}
@@ -249,10 +315,16 @@ export default function JobPage() {
 
       <div className="report-section">
         <div className="report-section__head">
-          <h2 className="section-title report-section__title">Full report</h2>
+          <h2 className="section-title report-section__title">Report</h2>
           <div className="job-toolbar">
-            <button type="button" className="btn btn-secondary" disabled={!canCopy} onClick={() => void copyReport()}>
-              Copy report
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={!canCopyForReuse}
+              title="Copy report and source links for pasting into Notion, Docs, or email"
+              onClick={() => void copyForReuse()}
+            >
+              Copy for reuse
             </button>
             <button
               type="button"
@@ -260,7 +332,11 @@ export default function JobPage() {
               disabled={rerunLoading || !j.topic}
               onClick={() => void rerunResearch()}
             >
-              {rerunLoading ? "Starting…" : "Rerun topic"}
+              {rerunLoading
+                ? "Starting your run…"
+                : j.researchId
+                  ? "Start new run"
+                  : "Run research"}
             </button>
             <Link href="/history" className="btn btn-ghost">
               History
@@ -268,14 +344,31 @@ export default function JobPage() {
           </div>
         </div>
         {copyMsg && <p className="copy-toast">{copyMsg}</p>}
+        {rerunError ? <p className="error" style={{ marginTop: "0.35rem" }}>{rerunError}</p> : null}
+        {data.report && reportPreview?.hasMore && !reportExpanded ? (
+          <p className="section-hint muted report-section__hint">Showing the top findings first — expand for sources and the complete write-up.</p>
+        ) : null}
 
-        {data.report ? (
-          <article className="report-md report-md--shell">
-            <ReactMarkdown>{data.report}</ReactMarkdown>
-          </article>
+        {data.report && reportMarkdown ? (
+          <>
+            <article className="report-md report-md--shell">
+              <ReactMarkdown>{reportMarkdown}</ReactMarkdown>
+            </article>
+            {reportPreview?.hasMore ? (
+              <div className="report-expand">
+                <button
+                  type="button"
+                  className="btn btn-ghost report-expand__btn"
+                  onClick={() => setReportExpanded((e) => !e)}
+                >
+                  {reportExpanded ? "Show condensed view" : "Show full report"}
+                </button>
+              </div>
+            ) : null}
+          </>
         ) : (
           <p className="muted">
-            {terminal ? "No report was stored for this job." : "Report appears when the job finishes."}
+            {terminal ? "No report was stored for this run." : "Report appears when the run finishes."}
           </p>
         )}
       </div>

@@ -61,11 +61,14 @@ if (-not $last -or $last.job.status -ne "succeeded") {
   throw "Timed out after ${PollSeconds}s; last status=$($last.job.status)"
 }
 
-Write-Host "GET $Base/api/jobs (history)"
+Write-Host "GET $Base/api/jobs (research list)"
 $hist = Invoke-RestMethod -Uri "$Base/api/jobs" -WebSession $session -Method Get
-$found = $hist.jobs | Where-Object { $_.id -eq $id }
-if (-not $found) { throw "Job not listed in history: $id" }
-Write-Host "  history contains job id=$id"
+# Response shape: { researches: [{ id, topic, latestRun: { id, ... } }] }
+$found = @($hist.researches) | Where-Object { $_.latestRun -and $_.latestRun.id -eq $id }
+if (-not $found) {
+  throw "Job not listed under any research latestRun (job id=$id). Ensure PR1 backfill ran and/or write path sets research_id on new jobs."
+}
+Write-Host "  research list contains job id=$id (as latestRun)"
 
 $runs = @($last.sourceRuns)
 Write-Host "  sourceRuns count: $($runs.Count)"

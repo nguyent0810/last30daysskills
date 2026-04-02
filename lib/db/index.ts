@@ -24,4 +24,12 @@ export function getDb() {
   return drizzle(pool, { schema });
 }
 
+/** End the shared pool (scripts/tests only — not for Next.js request handlers). */
+export async function closeDb(): Promise<void> {
+  if (pool) {
+    await pool.end();
+    pool = null;
+  }
+}
+
 export type Db = ReturnType<typeof getDb>;
