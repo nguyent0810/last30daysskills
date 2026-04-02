@@ -84,7 +84,7 @@ Open the URL Next prints (e.g. `http://localhost:3000`). Use **New** to start a 
 - **Thread display title:** `researches.display_title` — optional label only; **`topic`** stays canonical for reruns. Incremental SQL: `drizzle/0001_researches_display_title.sql`.
 - **Archive:** `researches.archived_at` — **`null`** = visible in default History. Incremental SQL: `drizzle/0002_researches_archived_at.sql`.
 - **Reports:** Deterministic markdown (no OpenAI in this phase).
-- **Schema fallback:** Incremental SQL for existing DBs: `drizzle/0000_…`, `0001_…`, `0002_researches_archived_at.sql` (or `db:push`).
+- **Schema fallback:** Incremental SQL for existing DBs: `drizzle/0000_…`, `0001_…`, `0002_researches_archived_at.sql`. Apply with **`npm run db:migrate:incremental`** (uses `DATABASE_URL` from `.env.local`) or **`npm run db:push`**. Production (e.g. Neon): run the same SQL in the host’s SQL editor if CI cannot reach the DB.
 - If outbound access to a source fails (DNS, rate limit), that source is marked failed; the job still succeeds if at least one source returns data.
 
 ## Runtime troubleshooting (Phase 1B.5)
