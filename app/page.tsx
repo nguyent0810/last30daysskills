@@ -51,13 +51,13 @@ export default function HomePage() {
   }
 
   return (
-    <div>
+    <div className="product-hero-block">
       <h1 className="page-title">New research</h1>
       <p className="page-lead muted">
         Enter a topic. We aggregate public signals from Hacker News, Polymarket, and Reddit — no sign-in
         required. A background worker completes the run in the background.
       </p>
-      <form onSubmit={submit}>
+      <form className="product-surface" onSubmit={submit}>
         <label className="field-label" htmlFor="topic">
           Topic
         </label>

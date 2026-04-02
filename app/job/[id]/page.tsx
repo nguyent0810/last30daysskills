@@ -2,12 +2,20 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { EditorialDigest } from "@/components/EditorialDigest";
 import { GeminiSummaryPanel } from "@/components/GeminiSummaryPanel";
 import { StatusBadge } from "@/components/StatusBadge";
+import type { DigestItem } from "@/lib/job-page/editorial-digest";
+import { factualInsightLine, mainInsightLine, runningHeroLines } from "@/lib/job-page/hero-insight";
 import type { ReportModeApi } from "@/lib/report-mode";
 import { reportModeLabel } from "@/lib/report-mode";
+import {
+  sourceCardStatus,
+  sourceCardStatusLabel,
+  sourceInterpretation,
+} from "@/lib/job-page/source-interpretation";
 
 type SourceRun = {
   source: string;
@@ -28,36 +36,17 @@ type JobPayload = {
   report: string | null;
   reportMode: ReportModeApi;
   sourceRuns: SourceRun[];
+  items?: DigestItem[];
   geminiAvailable?: boolean;
 };
+
+const SOURCE_ORDER = ["hn", "polymarket", "reddit"] as const;
 
 function sourceLabel(s: string): string {
   if (s === "hn") return "Hacker News";
   if (s === "polymarket") return "Polymarket";
   if (s === "reddit") return "Reddit";
   return s;
-}
-
-function sourceRowMeta(r: SourceRun): { count: string; note: string; noteClass: string } {
-  if (r.status === "failed") {
-    return {
-      count: "—",
-      note: r.error ?? "Request or parse failed",
-      noteClass: "source-note source-note--error",
-    };
-  }
-  if (r.itemCount === 0) {
-    return {
-      count: "0",
-      note: "No items matched this topic for this source.",
-      noteClass: "source-empty",
-    };
-  }
-  return {
-    count: String(r.itemCount),
-    note: "—",
-    noteClass: "source-note",
-  };
 }
 
 export default function JobPage() {
@@ -107,6 +96,12 @@ export default function JobPage() {
     }
   }, [data, load]);
 
+  const orderedRuns = useMemo(() => {
+    if (!data?.sourceRuns) return [];
+    const map = new Map(data.sourceRuns.map((r) => [r.source, r]));
+    return SOURCE_ORDER.map((key) => map.get(key)).filter(Boolean) as SourceRun[];
+  }, [data?.sourceRuns]);
+
   async function copyReport() {
     if (!data?.report) return;
     try {
@@ -153,7 +148,7 @@ export default function JobPage() {
 
   if (error) {
     return (
-      <div>
+      <div className="page-shell">
         <p className="breadcrumb">
           <Link href="/">Home</Link>
           {" · "}
@@ -166,7 +161,7 @@ export default function JobPage() {
 
   if (!data) {
     return (
-      <div>
+      <div className="page-shell">
         <p className="breadcrumb">
           <Link href="/">Home</Link>
           {" · "}
@@ -180,95 +175,110 @@ export default function JobPage() {
   const j = data.job;
   const terminal = j.status === "succeeded" || j.status === "failed";
   const canCopy = Boolean(data.report && j.status === "succeeded");
+  const digestItems = data.items ?? [];
+  const showDigest = terminal && j.status === "succeeded" && digestItems.length > 0;
+
+  const running = j.status === "queued" || j.status === "running";
+  const heroRunning = runningHeroLines(j.topic);
+  const heroMain = running ? heroRunning.main : mainInsightLine(j.topic, orderedRuns);
+  const heroFactual = running ? heroRunning.factual : factualInsightLine(orderedRuns);
 
   return (
-    <div>
+    <div className="page-shell job-page">
       <p className="breadcrumb">
         <Link href="/">Home</Link>
         {" · "}
         <Link href="/history">History</Link>
       </p>
 
-      <h1 className="page-title">{j.topic}</h1>
+      <div className="job-hero">
+        <p className="job-hero__main">{heroMain}</p>
+        <p className="job-hero__factual">{heroFactual}</p>
+      </div>
+
+      <h1 className="page-title job-page__title">{j.topic}</h1>
 
       <div className="job-meta">
         <StatusBadge status={j.status} />
-        {!terminal && <span className="muted">Checking for updates every few seconds…</span>}
+        {!terminal && <span className="muted">Updates every few seconds.</span>}
         {terminal && j.status === "succeeded" && (
           <span className="report-mode-pill">Report: {reportModeLabel(data.reportMode)}</span>
         )}
       </div>
 
       {j.error && (
-        <p className="error">
+        <p className="error job-page__job-error">
           <strong>Job could not complete:</strong> {j.error}
         </p>
       )}
 
       <h2 className="section-title">Sources</h2>
-      <p className="section-hint muted">
-        Each source runs independently. Partial failures are OK if another source produced items.
-      </p>
-      {!terminal && data.sourceRuns.length === 0 ? (
-        <p className="muted">Waiting for the worker to fetch sources…</p>
+      <p className="section-hint muted">Each source runs on its own. Partial failures are OK if another source delivered items.</p>
+
+      {!terminal && orderedRuns.length === 0 ? (
+        <p className="muted">Waiting for the worker…</p>
       ) : (
-        <div className="source-table-wrap">
-          <table className="source-table">
-            <thead>
-              <tr>
-                <th>Source</th>
-                <th>Status</th>
-                <th>Items</th>
-                <th>Detail</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.sourceRuns.map((r) => {
-                const meta = sourceRowMeta(r);
-                return (
-                  <tr key={r.source}>
-                    <td>{sourceLabel(r.source)}</td>
-                    <td>
-                      <span className={r.status === "succeeded" ? "badge badge-ok" : "badge badge-fail"}>
-                        {r.status === "succeeded" ? "OK" : "Failed"}
-                      </span>
-                    </td>
-                    <td>{meta.count}</td>
-                    <td className={meta.noteClass}>{meta.note}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="source-cards">
+          {orderedRuns.map((r) => {
+            const st = sourceCardStatus(r);
+            const badgeClass =
+              st === "failed" ? "source-card__badge source-card__badge--fail" : st === "empty" ? "source-card__badge source-card__badge--empty" : "source-card__badge source-card__badge--ok";
+            return (
+              <div key={r.source} className="source-card">
+                <div className="source-card__head">
+                  <span className="source-card__name">{sourceLabel(r.source)}</span>
+                  <span className={badgeClass}>{sourceCardStatusLabel(st)}</span>
+                </div>
+                <div className="source-card__count">
+                  {r.status === "failed" ? (
+                    <span className="muted">—</span>
+                  ) : (
+                    <>
+                      {r.itemCount} {r.itemCount === 1 ? "item" : "items"}
+                    </>
+                  )}
+                </div>
+                <p className="source-card__interpret">{sourceInterpretation(r)}</p>
+              </div>
+            );
+          })}
         </div>
       )}
 
-      <h2 className="section-title">Report</h2>
-      <div className="btn-row">
-        <button type="button" className="btn btn-secondary" disabled={!canCopy} onClick={() => void copyReport()}>
-          Copy report
-        </button>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          disabled={rerunLoading || !j.topic}
-          onClick={() => void rerunResearch()}
-        >
-          {rerunLoading ? "Starting…" : "Rerun same topic"}
-        </button>
-        <Link href="/history" className="btn btn-ghost">
-          Back to history
-        </Link>
-      </div>
-      {copyMsg && <p className="copy-toast">{copyMsg}</p>}
+      {showDigest ? <EditorialDigest items={digestItems} /> : null}
 
-      {data.report ? (
-        <article className="report-md">
-          <ReactMarkdown>{data.report}</ReactMarkdown>
-        </article>
-      ) : (
-        <p className="muted">{terminal ? "No report was stored for this job." : "Report appears when the job finishes."}</p>
-      )}
+      <div className="report-section">
+        <div className="report-section__head">
+          <h2 className="section-title report-section__title">Full report</h2>
+          <div className="job-toolbar">
+            <button type="button" className="btn btn-secondary" disabled={!canCopy} onClick={() => void copyReport()}>
+              Copy report
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={rerunLoading || !j.topic}
+              onClick={() => void rerunResearch()}
+            >
+              {rerunLoading ? "Starting…" : "Rerun topic"}
+            </button>
+            <Link href="/history" className="btn btn-ghost">
+              History
+            </Link>
+          </div>
+        </div>
+        {copyMsg && <p className="copy-toast">{copyMsg}</p>}
+
+        {data.report ? (
+          <article className="report-md report-md--shell">
+            <ReactMarkdown>{data.report}</ReactMarkdown>
+          </article>
+        ) : (
+          <p className="muted">
+            {terminal ? "No report was stored for this job." : "Report appears when the job finishes."}
+          </p>
+        )}
+      </div>
 
       <GeminiSummaryPanel
         jobId={id}

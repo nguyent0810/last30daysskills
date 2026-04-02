@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { jsonFromRouteError } from "@/lib/api/route-error-response";
 import { getDb } from "@/lib/db";
-import { reports, researchJobs, researchSourceRuns } from "@/lib/db/schema";
+import { reports, researchItems, researchJobs, researchSourceRuns } from "@/lib/db/schema";
 import { getAnonymousUserIdIfPresent } from "@/lib/auth/anonymous";
 import { toReportModeApi } from "@/lib/report-mode";
 
@@ -57,6 +57,20 @@ export async function GET(
       .from(researchSourceRuns)
       .where(eq(researchSourceRuns.jobId, id));
 
+    const items = await db
+      .select({
+        id: researchItems.id,
+        title: researchItems.title,
+        url: researchItems.url,
+        snippet: researchItems.snippet,
+        score: researchItems.score,
+        source: researchItems.source,
+      })
+      .from(researchItems)
+      .where(eq(researchItems.jobId, id))
+      .orderBy(desc(researchItems.score))
+      .limit(25);
+
     return NextResponse.json({
       job: {
         id: job.id,
@@ -69,6 +83,7 @@ export async function GET(
       report: report?.content ?? null,
       reportMode: toReportModeApi(report?.reportMode),
       sourceRuns: runs,
+      items,
       geminiAvailable: geminiConfigured(),
     });
   } catch (e) {

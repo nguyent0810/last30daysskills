@@ -41,7 +41,7 @@ export default function HistoryPage() {
 
   if (error) {
     return (
-      <div>
+      <div className="product-hero-block">
         <h1 className="page-title">History</h1>
         <p className="error">{error}</p>
         <p className="muted" style={{ marginTop: "1rem" }}>
@@ -53,7 +53,7 @@ export default function HistoryPage() {
 
   if (!jobs) {
     return (
-      <div>
+      <div className="product-hero-block">
         <h1 className="page-title">History</h1>
         <div className="loading-block muted">Loading your jobs…</div>
       </div>
@@ -62,7 +62,7 @@ export default function HistoryPage() {
 
   if (jobs.length === 0) {
     return (
-      <div>
+      <div className="product-hero-block">
         <h1 className="page-title">History</h1>
         <div className="empty-state">
           <p className="muted" style={{ margin: 0 }}>
@@ -78,7 +78,7 @@ export default function HistoryPage() {
   }
 
   return (
-    <div>
+    <div className="product-hero-block">
       <h1 className="page-title">History</h1>
       <p className="page-lead muted">Research runs for this browser session. Open a row for sources and report.</p>
       <ul className="history-list">
