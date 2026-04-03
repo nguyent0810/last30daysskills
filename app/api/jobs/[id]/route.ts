@@ -7,11 +7,16 @@ import { getAnonymousUserIdIfPresent } from "@/lib/auth/anonymous";
 import { resolveJobDetailThread } from "@/lib/jobs/job-detail-thread";
 import type { JobDetailThreadPayload } from "@/lib/jobs/job-detail-thread";
 import { toReportModeApi } from "@/lib/report-mode";
+import { resolveThreadCompressionProvider } from "@/lib/ai/thread-compression/select";
 
 export const dynamic = "force-dynamic";
 
 function geminiConfigured(): boolean {
   return Boolean(process.env.GEMINI_API_KEY?.trim());
+}
+
+function aiRecapConfigured(): boolean {
+  return resolveThreadCompressionProvider().ok;
 }
 
 function sameUser(a: string, b: string): boolean {
@@ -139,6 +144,7 @@ export async function GET(
       sourceRuns: runs,
       items,
       geminiAvailable: geminiConfigured(),
+      aiRecapConfigured: aiRecapConfigured(),
     });
   } catch (e) {
     return jsonFromRouteError(e, "[api/jobs/[id]]");

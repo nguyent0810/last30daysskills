@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DURATION_FAST_S, SHELL_EASE } from "@/lib/motion/shell";
 import ReactMarkdown from "react-markdown";
 import { EditorialDigest } from "@/components/EditorialDigest";
-import { GeminiSummaryPanel } from "@/components/GeminiSummaryPanel";
+import { RunRecapPanel } from "@/components/RunRecapPanel";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { DigestItem } from "@/lib/job-page/editorial-digest";
 import {
@@ -57,6 +57,7 @@ type JobPayload = {
   sourceRuns: SourceRun[];
   items?: DigestItem[];
   geminiAvailable?: boolean;
+  aiRecapConfigured?: boolean;
 };
 
 const SOURCE_ORDER = ["hn", "polymarket", "reddit"] as const;
@@ -392,6 +393,7 @@ export default function JobPage() {
   const showDigest = terminal && j.status === "succeeded" && digestItems.length > 0;
 
   const running = j.status === "queued" || j.status === "running";
+  const canRunRecap = j.status === "succeeded" && reportTrim && Boolean(data.aiRecapConfigured);
   const heroRunning = runningHeroLines(j.topic);
   const heroTopItems =
     digestItems.length > 0
@@ -673,6 +675,7 @@ export default function JobPage() {
             </p>
           ) : null}
         </div>
+        <RunRecapPanel jobId={id} enabled={canRunRecap} />
         {copyMsg && <p className="copy-toast">{copyMsg}</p>}
         {!thread && rerunError ? <p className="error" style={{ marginTop: "0.35rem" }}>{rerunError}</p> : null}
         {data.report && reportPreview?.hasMore && !reportExpanded ? (
@@ -704,12 +707,6 @@ export default function JobPage() {
           </p>
         )}
       </div>
-
-      <GeminiSummaryPanel
-        jobId={id}
-        enabled={Boolean(j.status === "succeeded" && data.report?.trim())}
-        geminiConfigured={data.geminiAvailable ?? false}
-      />
     </div>
   );
 }
