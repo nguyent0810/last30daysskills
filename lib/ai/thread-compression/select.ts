@@ -4,26 +4,33 @@ export type ResolvedThreadCompressionProvider =
   | { ok: false };
 
 /**
- * Deploy-time provider selection only (V1). `AI_SUMMARY_PROVIDER` must be `hf` or `gemini`.
- * No env-key precedence; invalid or incomplete config => disabled.
+ * Provider resolution for recap/compression.
+ * - If `AI_SUMMARY_PROVIDER` is explicitly `hf` or `gemini`, respect that choice.
+ * - Otherwise, use free-first fallback: HF if configured, else Gemini if configured.
  */
 export function resolveThreadCompressionProvider(): ResolvedThreadCompressionProvider {
-  const raw = process.env.AI_SUMMARY_PROVIDER?.trim();
-  if (raw !== "hf" && raw !== "gemini") {
-    return { ok: false };
+  const hfToken = process.env.HUGGINGFACE_API_TOKEN?.trim();
+  const hfModel = process.env.HUGGINGFACE_MODEL?.trim();
+  const hfConfigured = Boolean(hfToken && hfModel);
+
+  const geminiApiKey = process.env.GEMINI_API_KEY?.trim();
+  const geminiModel = process.env.GEMINI_MODEL?.trim();
+  const geminiConfigured = Boolean(geminiApiKey && geminiModel);
+
+  const explicit = process.env.AI_SUMMARY_PROVIDER?.trim();
+  if (explicit === "hf") {
+    if (!hfConfigured) return { ok: false };
+    return { ok: true, kind: "hf", token: hfToken!, model: hfModel! };
+  }
+  if (explicit === "gemini") {
+    if (!geminiConfigured) return { ok: false };
+    return { ok: true, kind: "gemini", apiKey: geminiApiKey!, model: geminiModel! };
   }
 
-  if (raw === "hf") {
-    const token = process.env.HUGGINGFACE_API_TOKEN?.trim();
-    const model = process.env.HUGGINGFACE_MODEL?.trim();
-    if (!token || !model) return { ok: false };
-    return { ok: true, kind: "hf", token, model };
-  }
-
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
-  const model = process.env.GEMINI_MODEL?.trim();
-  if (!apiKey || !model) return { ok: false };
-  return { ok: true, kind: "gemini", apiKey, model };
+  // Free-first fallback when provider env is missing/invalid.
+  if (hfConfigured) return { ok: true, kind: "hf", token: hfToken!, model: hfModel! };
+  if (geminiConfigured) return { ok: true, kind: "gemini", apiKey: geminiApiKey!, model: geminiModel! };
+  return { ok: false };
 }
 
 export function isThreadCompressionConfigured(): boolean {
