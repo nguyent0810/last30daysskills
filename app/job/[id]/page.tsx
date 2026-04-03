@@ -91,12 +91,14 @@ export default function JobPage() {
 
   const load = useCallback(async () => {
     if (!id) return;
-    const res = await fetch(`/api/jobs/${id}`, { credentials: "include" });
+    const res = await fetch(`/api/jobs/${id}`, { credentials: "include", cache: "no-store" });
     if (res.status === 401) {
+      setData(null);
       setError("No session. Open the home page once, then return here.");
       return;
     }
     if (!res.ok) {
+      setData(null);
       const raw = await res.text();
       try {
         const j = JSON.parse(raw) as { error?: string; code?: string };

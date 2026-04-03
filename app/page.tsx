@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { HOME_RECENT_JOBS_LIMIT, homeRecentJobsListUrl } from "@/lib/history/history-list-view";
 import { readLocalGeminiApiKey } from "@/lib/ai/run-recap/byok-local";
+import { mapRecapErrorToUi } from "@/lib/ai/run-recap/ui-copy";
 
 type HomeRecentLatestRun = {
   id: string;
@@ -26,6 +27,7 @@ type HomeRecapState = {
   loading: boolean;
   text: string | null;
   error: string | null;
+  details: string | null;
   copyMsg: string | null;
 };
 
@@ -116,6 +118,7 @@ export default function HomePage() {
       loading: true,
       text: null,
       error: null,
+      details: null,
       copyMsg: null,
     });
     try {
@@ -134,18 +137,24 @@ export default function HomePage() {
       });
 
       const raw = await res.text();
-      let j: { text?: string; error?: string } = {};
+      let j: { text?: string; error?: string; code?: string } = {};
       try {
         j = JSON.parse(raw) as typeof j;
       } catch {
         // keep j as {}
       }
       if (!res.ok) {
+        const mapped = mapRecapErrorToUi({
+          code: j.code,
+          error: j.error ?? raw ?? res.statusText,
+          usingGeminiKey: Boolean(localGeminiKey),
+        });
         setHomeRecap({
           runId,
           loading: false,
           text: null,
-          error: j.error ?? raw ?? res.statusText,
+          error: mapped.message,
+          details: mapped.details,
           copyMsg: null,
         });
         return;
@@ -157,6 +166,7 @@ export default function HomePage() {
           loading: false,
           text: null,
           error: "Empty response",
+          details: null,
           copyMsg: null,
         });
         return;
@@ -166,6 +176,7 @@ export default function HomePage() {
         loading: false,
         text,
         error: null,
+        details: null,
         copyMsg: null,
       });
     } catch (e) {
@@ -174,6 +185,7 @@ export default function HomePage() {
         loading: false,
         text: null,
         error: e instanceof Error ? e.message : "Request failed",
+        details: null,
         copyMsg: null,
       });
     }
@@ -287,7 +299,7 @@ export default function HomePage() {
                             </span>
                             <button
                               type="button"
-                              className="home-recent-threads__link home-recent-threads__link-btn"
+                              className="btn btn-secondary btn--sm home-recent-threads__ai-btn"
                               disabled={homeRecap?.loading}
                               onClick={() => void runHomeRecap(r.latestRun!.id)}
                             >
@@ -302,9 +314,17 @@ export default function HomePage() {
                     <div className="home-recap-inline" role="region" aria-label="AI summary">
                       {homeRecap.loading ? <p className="muted">Generating summary…</p> : null}
                       {homeRecap.error ? (
-                        <p className="gemini-error" role="alert" style={{ marginTop: 0 }}>
-                          {homeRecap.error}
-                        </p>
+                        <>
+                          <p className="gemini-error" role="alert" style={{ marginTop: 0 }}>
+                            {homeRecap.error}
+                          </p>
+                          {homeRecap.details ? (
+                            <details className="run-recap-details">
+                              <summary>Show details</summary>
+                              <pre>{homeRecap.details}</pre>
+                            </details>
+                          ) : null}
+                        </>
                       ) : null}
                       {homeRecap.text ? (
                         <>

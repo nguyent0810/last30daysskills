@@ -11,6 +11,12 @@ import { resolveThreadCompressionProvider } from "@/lib/ai/thread-compression/se
 
 export const dynamic = "force-dynamic";
 
+function jsonNoStore(data: unknown, init?: ResponseInit): NextResponse {
+  const res = NextResponse.json(data, init);
+  res.headers.set("Cache-Control", "no-store");
+  return res;
+}
+
 function geminiConfigured(): boolean {
   return Boolean(process.env.GEMINI_API_KEY?.trim());
 }
@@ -34,13 +40,13 @@ export async function GET(
 ) {
   const id = params.id;
   if (!id) {
-    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    return jsonNoStore({ error: "Missing id" }, { status: 400 });
   }
 
   try {
     const userId = await getAnonymousUserIdIfPresent();
     if (!userId) {
-      return NextResponse.json({ error: "No session" }, { status: 401 });
+      return jsonNoStore({ error: "No session" }, { status: 401 });
     }
 
     const db = getDb();
@@ -51,11 +57,11 @@ export async function GET(
       .limit(1);
 
     if (!job) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return jsonNoStore({ error: "Not found" }, { status: 404 });
     }
 
     if (!sameUser(job.userId, userId)) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return jsonNoStore({ error: "Not found" }, { status: 404 });
     }
 
     const [report] = await db
@@ -133,7 +139,7 @@ export async function GET(
       };
     }
 
-    return NextResponse.json({
+    return jsonNoStore({
       job: {
         id: job.id,
         researchId: job.researchId ?? null,

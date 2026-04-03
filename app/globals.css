@@ -633,6 +633,49 @@ code {
   margin-top: 1rem;
 }
 
+.run-recap-quickaction {
+  margin-top: 0.75rem;
+}
+
+.run-recap-cta {
+  font-weight: 700;
+  min-width: 11.5rem;
+}
+
+.run-recap-advanced {
+  margin-top: 0.55rem;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.run-recap-advanced summary {
+  cursor: pointer;
+  user-select: none;
+}
+
+.run-recap-details {
+  margin-top: 0.45rem;
+}
+
+.run-recap-details summary {
+  cursor: pointer;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+}
+
+.run-recap-details pre {
+  margin: 0.35rem 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--color-muted);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.45rem 0.55rem;
+}
+
 .thread-ai-compression {
   margin-top: 1.25rem;
   padding-top: 1.1rem;
@@ -1291,6 +1334,10 @@ code {
   opacity: 0.65;
   cursor: default;
   text-decoration: none;
+}
+
+.home-recent-threads__ai-btn {
+  margin-left: 0.1rem;
 }
 
 .home-recent-threads__link:hover {
