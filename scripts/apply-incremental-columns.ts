@@ -44,6 +44,7 @@ const files = [
   "0002_researches_archived_at.sql",
   "0003_researches_pin_note.sql",
   "0004_researches_share.sql",
+  "0005_researches_observability.sql",
 ];
 
 async function main() {

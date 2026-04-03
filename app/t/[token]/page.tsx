@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { ReportModeApi } from "@/lib/report-mode";
 import { reportModeLabel } from "@/lib/report-mode";
@@ -72,6 +72,7 @@ export default function PublicThreadPage() {
   const [data, setData] = useState<PublicPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [feedbackBusy, setFeedbackBusy] = useState(false);
+  const viewSignalSent = useRef(false);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -97,6 +98,12 @@ export default function PublicThreadPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!token || !data || viewSignalSent.current) return;
+    viewSignalSent.current = true;
+    void fetch(`/api/public/thread/${encodeURIComponent(token)}/view`, { method: "POST" });
+  }, [token, data]);
 
   async function sendVote(vote: "up" | "down") {
     if (!token || feedbackBusy) return;
@@ -152,6 +159,9 @@ export default function PublicThreadPage() {
       <p className="breadcrumb">
         <Link href="/">Home</Link>
         <span className="muted"> · Shared thread</span>
+      </p>
+      <p className="muted public-thread__framing">
+        A research snapshot from discussion signals across the web (Hacker News, Reddit, Polymarket).
       </p>
 
       <header className="public-thread__header">

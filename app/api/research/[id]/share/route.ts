@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { jsonFromRouteError } from "@/lib/api/route-error-response";
 import { getAnonymousUserIdIfPresent } from "@/lib/auth/anonymous";
@@ -17,8 +17,8 @@ function mintShareToken(): string {
 }
 
 /**
- * Ensures a share token exists for the thread and returns the public path.
- * Idempotent when a token already exists.
+ * Ensures a share token exists, records copy intent (share_copy_count), and returns the public path.
+ * Call on every "Copy share link" so aggregate sharing usage is measurable.
  */
 export async function POST(_request: Request, { params }: { params: { id: string } }) {
   const id = params.id;
@@ -43,15 +43,30 @@ export async function POST(_request: Request, { params }: { params: { id: string
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    if (research.shareToken) {
-      return NextResponse.json({ path: `/t/${research.shareToken}`, shareToken: research.shareToken });
-    }
+    const now = new Date();
+    let token = research.shareToken;
 
-    const token = mintShareToken();
-    await db
-      .update(researches)
-      .set({ shareToken: token, updatedAt: new Date() })
-      .where(eq(researches.id, id));
+    if (!token) {
+      token = mintShareToken();
+      await db
+        .update(researches)
+        .set({
+          shareToken: token,
+          shareCopyCount: sql`${researches.shareCopyCount} + 1`,
+          lastSharedAt: now,
+          updatedAt: now,
+        })
+        .where(eq(researches.id, id));
+    } else {
+      await db
+        .update(researches)
+        .set({
+          shareCopyCount: sql`${researches.shareCopyCount} + 1`,
+          lastSharedAt: now,
+          updatedAt: now,
+        })
+        .where(eq(researches.id, id));
+    }
 
     return NextResponse.json({ path: `/t/${token}`, shareToken: token });
   } catch (e) {

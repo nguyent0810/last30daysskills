@@ -36,6 +36,12 @@ export const researches = pgTable("researches", {
   shareToken: text("share_token"),
   shareFeedbackUp: integer("share_feedback_up").notNull().default(0),
   shareFeedbackDown: integer("share_feedback_down").notNull().default(0),
+  /** Incremented when owner uses Copy share link (POST /share). */
+  shareCopyCount: integer("share_copy_count").notNull().default(0),
+  /** Incremented when a client sends POST /public/thread/[token]/view after load. */
+  publicViewCount: integer("public_view_count").notNull().default(0),
+  lastSharedAt: timestamp("last_shared_at", { withTimezone: true }),
+  lastPublicViewAt: timestamp("last_public_view_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("researches_user_id_idx").on(table.userId)]);

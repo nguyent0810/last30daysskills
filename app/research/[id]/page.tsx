@@ -321,37 +321,31 @@ function ResearchPageBody() {
     if (!id || !data) return;
     setShareCopyMsg(null);
     try {
-      let path: string;
-      if (data.research.shareToken) {
-        path = `/t/${data.research.shareToken}`;
-      } else {
-        const res = await fetch(`/api/research/${id}/share`, {
-          method: "POST",
-          credentials: "include",
-        });
-        if (res.status === 401) {
-          setShareCopyMsg("No session. Open the home page once, then return here.");
-          return;
-        }
-        if (!res.ok) {
-          const t = await res.text();
-          let msg = t || res.statusText;
-          try {
-            const j = JSON.parse(t) as { error?: string };
-            if (j.error) msg = j.error;
-          } catch {
-            /* plain text */
-          }
-          setShareCopyMsg(msg);
-          return;
-        }
-        const j = (await res.json()) as { path: string; shareToken: string };
-        path = j.path;
-        setData((prev) =>
-          prev ? { ...prev, research: { ...prev.research, shareToken: j.shareToken } } : prev
-        );
+      const res = await fetch(`/api/research/${id}/share`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (res.status === 401) {
+        setShareCopyMsg("No session. Open the home page once, then return here.");
+        return;
       }
-      const url = `${window.location.origin}${path}`;
+      if (!res.ok) {
+        const t = await res.text();
+        let msg = t || res.statusText;
+        try {
+          const j = JSON.parse(t) as { error?: string };
+          if (j.error) msg = j.error;
+        } catch {
+          /* plain text */
+        }
+        setShareCopyMsg(msg);
+        return;
+      }
+      const j = (await res.json()) as { path: string; shareToken: string };
+      setData((prev) =>
+        prev ? { ...prev, research: { ...prev.research, shareToken: j.shareToken } } : prev
+      );
+      const url = `${window.location.origin}${j.path}`;
       await navigator.clipboard.writeText(url);
       setShareCopyMsg("Link copied");
       setTimeout(() => setShareCopyMsg(null), 2000);
