@@ -66,3 +66,17 @@ Use this on every deploy that includes schema changes:
 ## Optional: CI / release pipeline
 
 Add `npm run db:verify-schema` as a post-deploy or pre-traffic step so drift is caught with a **clear operator message** instead of user-facing 500s on `POST /api/jobs`.
+
+## Optional: thread AI compression (Phase 6)
+
+Authenticated thread pages can call `POST /api/research/[id]/ai-summary` when the deployment is configured. There is **no** provider fallback: set exactly one of Hugging Face or Gemini.
+
+| Variable | Purpose |
+|----------|---------|
+| `AI_SUMMARY_PROVIDER` | Required to enable: `hf` or `gemini` |
+| `HUGGINGFACE_API_TOKEN` | With `hf`: Inference API token |
+| `HUGGINGFACE_MODEL` | With `hf`: model id (e.g. text-generation) |
+| `GEMINI_API_KEY` | With `gemini`: Google AI key |
+| `GEMINI_MODEL` | With `gemini`: model id (e.g. `gemini-2.0-flash`) |
+
+Responses are not stored. If this block is unset or incomplete, the UI hides the control (`aiSummaryAvailable: false` on `GET /api/research/[id]`).

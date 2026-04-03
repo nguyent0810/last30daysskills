@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { isThreadAiCompressionEligible } from "@/lib/ai/thread-compression/eligibility";
 import { buildThreadBriefText } from "@/lib/research/format-thread-brief";
 import { DURATION_FAST_S, SHELL_EASE, shellTransitionMedium, staggerDelay } from "@/lib/motion/shell";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -41,6 +42,8 @@ type Payload = {
   runs: RunRow[];
   sincePreviousRun?: { newLinkCount: number } | null;
   threadInsight?: ThreadInsightPayload | null;
+  /** Server: `AI_SUMMARY_PROVIDER` + paired HF or Gemini env vars are set. */
+  aiSummaryAvailable?: boolean;
 };
 
 function directionPillLabel(d: ThreadInsightPayload["direction"]): string {
@@ -98,6 +101,10 @@ function ResearchPageBody() {
   const [metaError, setMetaError] = useState<string | null>(null);
   const [briefCopyMsg, setBriefCopyMsg] = useState<string | null>(null);
   const [shareCopyMsg, setShareCopyMsg] = useState<string | null>(null);
+  const [aiCompressLoading, setAiCompressLoading] = useState(false);
+  const [aiCompressError, setAiCompressError] = useState<string | null>(null);
+  const [aiCompressText, setAiCompressText] = useState<string | null>(null);
+  const [aiCompressCopyMsg, setAiCompressCopyMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -367,6 +374,60 @@ function ResearchPageBody() {
     }
   }
 
+  async function runAiCompression() {
+    if (!id) return;
+    setAiCompressLoading(true);
+    setAiCompressError(null);
+    setAiCompressCopyMsg(null);
+    try {
+      const res = await fetch(`/api/research/${id}/ai-summary`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const raw = await res.text();
+      let j: { text?: string; error?: string };
+      try {
+        j = JSON.parse(raw) as { text?: string; error?: string };
+      } catch {
+        j = {};
+      }
+      if (!res.ok) {
+        setAiCompressError(j.error ?? (raw || res.statusText));
+        return;
+      }
+      const text = typeof j.text === "string" ? j.text.trim() : "";
+      if (!text) {
+        setAiCompressError("Empty response");
+        return;
+      }
+      setAiCompressText(text);
+    } catch (e) {
+      setAiCompressError(e instanceof Error ? e.message : "Request failed");
+    } finally {
+      setAiCompressLoading(false);
+    }
+  }
+
+  function dismissAiCompression() {
+    setAiCompressText(null);
+    setAiCompressError(null);
+    setAiCompressCopyMsg(null);
+  }
+
+  async function copyAiCompression() {
+    if (!aiCompressText) return;
+    try {
+      await navigator.clipboard.writeText(aiCompressText);
+      setAiCompressCopyMsg("Copied");
+      setTimeout(() => setAiCompressCopyMsg(null), 2000);
+    } catch {
+      setAiCompressCopyMsg("Could not copy");
+      setTimeout(() => setAiCompressCopyMsg(null), 3000);
+    }
+  }
+
   useEffect(() => {
     if (searchParams.get("rename") !== "1" || !data || !id) return;
     setRenameDraft(data.research.displayTitle ?? "");
@@ -447,6 +508,8 @@ function ResearchPageBody() {
   const r = data.research;
   const threadLabel = r.displayTitle?.trim() || r.topic;
   const isArchived = r.archivedAt != null && r.archivedAt.length > 0;
+  const showAiCompression =
+    Boolean(data.aiSummaryAvailable) && isThreadAiCompressionEligible(data.runs.length, briefText.length);
 
   return (
     <div className="page-shell">
@@ -591,6 +654,53 @@ function ResearchPageBody() {
           <p className="error" role="alert" style={{ marginTop: "0.45rem", fontSize: "0.85rem" }}>
             {briefCopyMsg}
           </p>
+        ) : null}
+
+        {showAiCompression ? (
+          <section className="thread-ai-compression thread-ai-compression--muted" aria-label="AI thread compression">
+            <div className="thread-ai-compression__controls">
+              <button
+                type="button"
+                className="btn btn-secondary btn--sm"
+                disabled={aiCompressLoading}
+                onClick={() => void runAiCompression()}
+              >
+                {aiCompressLoading ? "Shortening…" : "Shorten with AI (experimental)"}
+              </button>
+              {aiCompressText ? (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn--sm"
+                    onClick={() => void copyAiCompression()}
+                  >
+                    {aiCompressCopyMsg === "Copied" ? "Copied" : "Copy summary"}
+                  </button>
+                  <button type="button" className="btn btn-ghost btn--sm" onClick={dismissAiCompression}>
+                    Dismiss
+                  </button>
+                </>
+              ) : null}
+            </div>
+            <p className="muted thread-ai-compression__hint">
+              Optional: short AI compression of the thread brief and recent runs. Not saved; same language rules as the
+              brief when possible.
+            </p>
+            {aiCompressError ? (
+              <p className="error thread-ai-compression__error" role="alert">
+                {aiCompressError}
+              </p>
+            ) : null}
+            {aiCompressText ? (
+              <pre className="thread-ai-compression__output">{aiCompressText}</pre>
+            ) : null}
+            {aiCompressCopyMsg && aiCompressCopyMsg !== "Copied" ? (
+              <p className="error" role="alert" style={{ marginTop: "0.35rem", fontSize: "0.85rem" }}>
+                {aiCompressCopyMsg}
+              </p>
+            ) : null}
+            {aiCompressCopyMsg === "Copied" ? <p className="copy-toast">{aiCompressCopyMsg}</p> : null}
+          </section>
         ) : null}
       </div>
 

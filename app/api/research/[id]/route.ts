@@ -4,6 +4,7 @@ import { jsonFromRouteError } from "@/lib/api/route-error-response";
 import { getAnonymousUserIdIfPresent } from "@/lib/auth/anonymous";
 import { getDb } from "@/lib/db";
 import { researches } from "@/lib/db/schema";
+import { isThreadCompressionConfigured } from "@/lib/ai/thread-compression/select";
 import { parseResearchPatchBody } from "@/lib/research/parse-research-patch-body";
 import { loadThreadDetailForResearch } from "@/lib/research/load-thread-detail";
 
@@ -57,6 +58,8 @@ export async function GET(_request: Request, { params }: { params: { id: string 
       runs: detail.runs,
       sincePreviousRun: detail.sincePreviousRun,
       threadInsight: detail.threadInsight,
+      /** Deploy-time AI compression (HF or Gemini) is configured; eligibility still uses runs + brief length on client. */
+      aiSummaryAvailable: isThreadCompressionConfigured(),
     });
   } catch (e) {
     return jsonFromRouteError(e, "[api/research/[id]]");
