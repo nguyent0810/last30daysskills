@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "motion/react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { DURATION_FAST_S, SHELL_EASE } from "@/lib/motion/shell";
 import ReactMarkdown from "react-markdown";
 import { EditorialDigest } from "@/components/EditorialDigest";
 import { GeminiSummaryPanel } from "@/components/GeminiSummaryPanel";
@@ -124,7 +126,21 @@ export default function JobPage() {
     [data?.report]
   );
 
-  async function copyForReuse() {
+  async function copyReport() {
+    if (!data) return;
+    const text = data.report?.trim() ?? "";
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyMsg("Report copied");
+      setTimeout(() => setCopyMsg(null), 2500);
+    } catch {
+      setCopyMsg("Could not copy — select text manually");
+      setTimeout(() => setCopyMsg(null), 3000);
+    }
+  }
+
+  function downloadMarkdown() {
     if (!data) return;
     const reportTrim = data.report?.trim() ?? "";
     const items = data.items ?? [];
@@ -135,14 +151,16 @@ export default function JobPage() {
       report: data.report,
       items: items.map((it) => ({ title: it.title, url: it.url })),
     });
-    try {
-      await navigator.clipboard.writeText(md);
-      setCopyMsg("Copied to clipboard");
-      setTimeout(() => setCopyMsg(null), 2500);
-    } catch {
-      setCopyMsg("Could not copy — select text manually");
-      setTimeout(() => setCopyMsg(null), 3000);
-    }
+    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `research-run-${data.job.id}.md`;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   }
 
   async function rerunResearch() {
@@ -228,7 +246,8 @@ export default function JobPage() {
   const terminal = j.status === "succeeded" || j.status === "failed";
   const reportTrim = (data.report?.trim() ?? "").length > 0;
   const hasItems = (data.items?.length ?? 0) > 0;
-  const canCopyForReuse = terminal && (reportTrim || hasItems);
+  const canCopyReport = terminal && reportTrim;
+  const canDownloadMarkdown = terminal && (reportTrim || hasItems);
   const digestItems = data.items ?? [];
   const showDigest = terminal && j.status === "succeeded" && digestItems.length > 0;
 
@@ -275,7 +294,15 @@ export default function JobPage() {
       ) : null}
 
       <div className="job-meta">
-        <StatusBadge status={j.status} />
+        <motion.span
+          key={j.status}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: DURATION_FAST_S, ease: SHELL_EASE }}
+          style={{ display: "inline-block" }}
+        >
+          <StatusBadge status={j.status} />
+        </motion.span>
         {!terminal && <span className="muted">Updates every few seconds.</span>}
         {terminal && j.status === "succeeded" && (
           <span className="report-mode-pill">Report: {reportModeLabel(data.reportMode)}</span>
@@ -327,30 +354,47 @@ export default function JobPage() {
         <div className="report-section__head">
           <h2 className="section-title report-section__title">Report</h2>
           <div className="job-toolbar">
-            <button
+            <motion.button
               type="button"
               className="btn btn-secondary"
-              disabled={!canCopyForReuse}
-              title="Copy report and source links for pasting into Notion, Docs, or email"
-              onClick={() => void copyForReuse()}
+              disabled={!canCopyReport}
+              title="Copy the report body only (markdown as stored)"
+              onClick={() => void copyReport()}
+              whileTap={canCopyReport ? { scale: 0.98 } : undefined}
+              transition={{ duration: 0.12, ease: SHELL_EASE }}
             >
-              Copy for reuse
-            </button>
-            <button
+              Copy report
+            </motion.button>
+            <motion.button
+              type="button"
+              className="btn btn-secondary"
+              disabled={!canDownloadMarkdown}
+              title="Download topic, full report, and source links as a Markdown file"
+              onClick={() => downloadMarkdown()}
+              whileTap={canDownloadMarkdown ? { scale: 0.98 } : undefined}
+              transition={{ duration: 0.12, ease: SHELL_EASE }}
+            >
+              Download Markdown
+            </motion.button>
+            <motion.button
               type="button"
               className="btn btn-secondary"
               disabled={rerunLoading || !j.topic || running}
               onClick={() => void rerunResearch()}
+              whileTap={!(rerunLoading || !j.topic || running) ? { scale: 0.98 } : undefined}
+              transition={{ duration: 0.12, ease: SHELL_EASE }}
             >
               {rerunLoading
                 ? "Starting your run…"
                 : j.researchId
                   ? "Start new run"
                   : "Run research"}
-            </button>
-            <Link href="/history" className="btn btn-ghost">
-              History
-            </Link>
+            </motion.button>
+            <motion.span whileTap={{ scale: 0.98 }} transition={{ duration: 0.12, ease: SHELL_EASE }} style={{ display: "inline-block" }}>
+              <Link href="/history" className="btn btn-ghost">
+                History
+              </Link>
+            </motion.span>
           </div>
           {running ? (
             <p className="muted" style={{ marginTop: "0.35rem", fontSize: "0.88rem" }}>
@@ -371,13 +415,15 @@ export default function JobPage() {
             </article>
             {reportPreview?.hasMore ? (
               <div className="report-expand">
-                <button
+                <motion.button
                   type="button"
                   className="btn btn-ghost report-expand__btn"
                   onClick={() => setReportExpanded((e) => !e)}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ duration: 0.12, ease: SHELL_EASE }}
                 >
                   {reportExpanded ? "Show condensed view" : "Show full report"}
-                </button>
+                </motion.button>
               </div>
             ) : null}
           </>

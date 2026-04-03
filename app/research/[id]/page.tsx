@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "motion/react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { DURATION_FAST_S, SHELL_EASE, shellTransitionMedium, staggerDelay } from "@/lib/motion/shell";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { ReportModeApi } from "@/lib/report-mode";
 import { reportModeLabel } from "@/lib/report-mode";
@@ -326,14 +328,19 @@ export default function ResearchPage() {
 
       {archiveError ? <p className="error" style={{ marginTop: "0.5rem" }}>{archiveError}</p> : null}
 
-      <header style={{ marginTop: "0.35rem" }}>
+      <motion.header
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={shellTransitionMedium}
+        style={{ marginTop: "0.35rem" }}
+      >
         <h1 className="page-title" style={{ marginBottom: "0.35rem" }}>
           {threadLabel}
         </h1>
         <p className="muted" style={{ margin: 0, fontSize: "0.9rem", maxWidth: "38rem" }}>
           Continue this thread here—start a new run or open a saved run below.
         </p>
-      </header>
+      </motion.header>
 
       <div style={{ marginTop: "1rem" }}>
         <button
@@ -444,7 +451,18 @@ export default function ResearchPage() {
       ) : (
         <ul className="history-list" style={{ marginTop: "0.65rem" }}>
           {data.runs.map((run, runIndex) => (
-            <li key={run.id}>
+            <motion.li
+              key={run.id}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: DURATION_FAST_S,
+                ease: SHELL_EASE,
+                delay: staggerDelay(runIndex),
+              }}
+              whileHover={{ y: -2 }}
+              style={{ willChange: "transform" }}
+            >
               <Link href={`/job/${run.id}`} className="history-card" style={{ display: "block" }}>
                 <p className="history-card-title" style={{ marginBottom: "0.2rem" }}>
                   Run · {formatTime(run.createdAt)}
@@ -467,7 +485,7 @@ export default function ResearchPage() {
                   ) : null}
                 </div>
               </Link>
-            </li>
+            </motion.li>
           ))}
         </ul>
       )}

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import "./globals.css";
+import { MotionShell } from "@/components/MotionShell";
 import { SessionBootstrap } from "@/components/SessionBootstrap";
+import { SiteHeader } from "@/components/SiteHeader";
 
 export const metadata: Metadata = {
   title: "Research",
@@ -16,17 +17,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <SessionBootstrap />
-        <header className="site-header">
-          <Link href="/" className="site-header-brand">
-            <strong>Research</strong>
-          </Link>
-          <nav className="site-nav">
-            <Link href="/">New</Link>
-            <Link href="/history">History</Link>
-          </nav>
-        </header>
-        <main className="site-main">{children}</main>
+        <MotionShell>
+          <SessionBootstrap />
+          <SiteHeader />
+          <main className="site-main">{children}</main>
+        </MotionShell>
       </body>
     </html>
   );

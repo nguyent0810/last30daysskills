@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "motion/react";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { DURATION_FAST_S, SHELL_EASE, staggerDelay } from "@/lib/motion/shell";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { ReportModeApi } from "@/lib/report-mode";
 import { reportModeLabel } from "@/lib/report-mode";
@@ -161,8 +163,19 @@ function HistoryListBody() {
         </p>
       ) : null}
       <ul className="history-list" style={{ marginTop: "1rem" }}>
-        {researches.map((r) => (
-          <li key={r.id}>
+        {researches.map((r, index) => (
+          <motion.li
+            key={r.id}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: DURATION_FAST_S,
+              ease: SHELL_EASE,
+              delay: staggerDelay(index),
+            }}
+            whileHover={{ y: -2 }}
+            style={{ willChange: "transform" }}
+          >
             <Link href={`/research/${r.id}`} className="history-card">
               <p className="history-card-title">{r.displayTitle?.trim() || r.topic}</p>
               <div className="history-card-meta">
@@ -179,7 +192,7 @@ function HistoryListBody() {
                 )}
               </div>
             </Link>
-          </li>
+          </motion.li>
         ))}
       </ul>
     </>

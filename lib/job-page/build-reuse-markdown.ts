@@ -1,5 +1,5 @@
 /**
- * Single clipboard payload for “Copy for reuse”: header + exact report + deduped sources (title + URL only).
+ * Full-run Markdown export (run page “Download Markdown”): topic, run time, report, deduped sources (title + URL).
  */
 
 import { normalizeUrlForReuse, urlMatchKey } from "@/lib/url-match";

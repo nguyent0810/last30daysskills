@@ -79,7 +79,7 @@ Open the URL Next prints (e.g. `http://localhost:3000`). Use **New** to start a 
 
 - **Auth:** Signed cookie (`SESSION_SECRET`), `users.kind = anonymous`. Legacy `internal` rows from Phase 1A may remain in DB; new users are anonymous.
 - **Research + runs:** Each topic thread is a `researches` row; each execution is a `research_jobs` row with `research_id` set. **Legacy jobs** with null `research_id` still load in the UI; **Rerun** from those uses `{ topic }` and creates a **new** thread (see API table).
-- **Copy for reuse** (run page): copies topic, run time, full report, and a deduped **Sources** list (title + URL only) to the clipboard — no extra export pipeline. URL matching uses `lib/url-match.ts` (same rules as below).
+- **Export** (run page): **Copy report** puts only the stored report body on the clipboard; **Download Markdown** saves `research-run-{jobId}.md` with topic, run time, full report, and deduped **Sources** (title + URL via `lib/url-match.ts`).
 - **Since last run** (thread page): when meaningful, shows “N new links since last run” (newest vs previous run only); hidden otherwise.
 - **Thread display title:** `researches.display_title` — optional label only; **`topic`** stays canonical for reruns. Incremental SQL: `drizzle/0001_researches_display_title.sql`.
 - **Archive:** `researches.archived_at` — **`null`** = visible in default History. Incremental SQL: `drizzle/0002_researches_archived_at.sql`.
