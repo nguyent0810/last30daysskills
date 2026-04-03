@@ -199,17 +199,18 @@ export default function HomePage() {
 
   return (
     <div className="product-hero-block">
-      <h1 className="page-title">Research a topic</h1>
+      <p className="product-eyebrow">Research · Public signal workspace</p>
+      <h1 className="page-title">Research any topic</h1>
       <div style={{ maxWidth: "40rem" }}>
-        <p className="page-lead muted" style={{ marginBottom: 0 }}>
-          A topic is what you want to learn about—a question or subject in plain language.
+        <p className="page-lead" style={{ marginBottom: 0 }}>
+          Turn one question into a concise research output with report, recap, and source evidence.
         </p>
         <p className="muted" style={{ marginTop: "0.65rem", marginBottom: 0, lineHeight: 1.5 }}>
-          We gather public signals from Hacker News, Polymarket, and Reddit. Each run opens its own page
-          with a report and sources. History lists your threads; open one to revisit saved runs.
+          We pull public signals from Hacker News, Polymarket, and Reddit into a single run with
+          report, recap, and source evidence.
         </p>
         <p className="muted" style={{ marginTop: "0.65rem", marginBottom: 0, lineHeight: 1.5 }}>
-          No sign-in. Data is kept for this browser session only.
+          No sign-in required. Your data stays scoped to this browser session.
         </p>
       </div>
       <form className="product-surface" onSubmit={submit} style={{ marginTop: "1.25rem" }}>
@@ -260,7 +261,7 @@ export default function HomePage() {
 
       {recentThreads && recentThreads.length > 0 ? (
         <section className="home-recent-threads" aria-label="Recent threads">
-          <h2 className="home-recent-threads__heading">Recent threads</h2>
+          <h2 className="home-recent-threads__heading">Continue your work</h2>
           <ul className="home-recent-threads__list">
             {recentThreads.map((r) => {
               const label = r.displayTitle?.trim() || r.topic;

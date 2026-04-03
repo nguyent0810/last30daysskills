@@ -19,12 +19,18 @@ export function SiteHeader() {
         style={{ display: "inline-block" }}
       >
         <Link href="/" className="site-header-brand">
-          <strong>Research</strong>
+          <span className="site-header-brand__mark" aria-hidden>
+            ◇
+          </span>
+          <span className="site-header-brand__wording">
+            <strong>Research</strong>
+            <span className="site-header-brand__tag">Public Signal Workspace</span>
+          </span>
         </Link>
       </motion.span>
       <nav className="site-nav">
         <NavLink href="/" isActive={newActive}>
-          New
+          New Research
         </NavLink>
         <NavLink href="/history" isActive={historyActive}>
           History

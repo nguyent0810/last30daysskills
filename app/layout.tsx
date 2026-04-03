@@ -19,8 +19,23 @@ export default function RootLayout({
       <body>
         <MotionShell>
           <SessionBootstrap />
-          <SiteHeader />
-          <main className="site-main">{children}</main>
+          <div className="site-shell">
+            <SiteHeader />
+            <main className="site-main">{children}</main>
+            <footer className="site-footer">
+              <div className="site-footer__inner">
+                <span>Research</span>
+                <span className="site-footer__sep" aria-hidden>
+                  ·
+                </span>
+                <span>Public signal research workspace</span>
+                <span className="site-footer__sep" aria-hidden>
+                  ·
+                </span>
+                <span className="muted">Session-only data, no sign-in required</span>
+              </div>
+            </footer>
+          </div>
         </MotionShell>
       </body>
     </html>
