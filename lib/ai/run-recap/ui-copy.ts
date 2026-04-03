@@ -19,6 +19,9 @@ export function mapRecapErrorToUi(input: RecapUiErrorInput): {
   if (code === "AI_NOT_CONFIGURED") {
     return { message: "AI recap unavailable right now.", details: raw || null };
   }
+  if (code === "AI_RECAP_BAD_OUTPUT") {
+    return { message: "We could not generate a useful recap this time. Please try again.", details: raw || null };
+  }
   if (code === "JOB_NOT_ELIGIBLE") {
     return { message: "This run is not ready for AI recap yet.", details: raw || null };
   }

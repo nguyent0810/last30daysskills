@@ -12,6 +12,8 @@ import {
 import { runThreadCompression } from "@/lib/ai/thread-compression/run";
 import { buildRunRecapContext } from "@/lib/ai/run-recap/build-context";
 import { buildRunRecapPrompts } from "@/lib/ai/run-recap/prompt";
+import type { RecapLanguage } from "@/lib/ai/run-recap/prompt";
+import { isRecapOutputAcceptable } from "@/lib/ai/run-recap/quality";
 
 export const dynamic = "force-dynamic";
 
@@ -25,9 +27,13 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return NextResponse.json({ error: "Missing id" }, { status: 400 });
   }
 
-  // Body is required by the Phase 6 contract but is unused for recap.
+  let language: RecapLanguage = "en";
+  // Body now accepts optional recap language.
   try {
-    await request.json();
+    const body = (await request.json()) as { language?: string };
+    if (body?.language === "ja" || body?.language === "vi" || body?.language === "en") {
+      language = body.language;
+    }
   } catch {
     // Accept empty/missing body; spec sends `{}`.
   }
@@ -122,11 +128,20 @@ export async function POST(request: Request, { params }: { params: { id: string 
       })),
     });
 
-    const { system, user } = buildRunRecapPrompts(job.topic, displayTitle, contextBlock);
+    const { system, user } = buildRunRecapPrompts(job.topic, displayTitle, contextBlock, language);
     const result = await runThreadCompression(system, user, provider);
 
     if (!result.ok) {
       return NextResponse.json({ error: result.message, code: result.code }, { status: 502 });
+    }
+    if (!isRecapOutputAcceptable(result.text, language)) {
+      return NextResponse.json(
+        {
+          error: "Recap quality check failed. Please try again.",
+          code: "AI_RECAP_BAD_OUTPUT",
+        },
+        { status: 502 }
+      );
     }
 
     return NextResponse.json({ text: result.text });

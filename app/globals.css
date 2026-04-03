@@ -635,6 +635,10 @@ code {
 
 .run-recap-quickaction {
   margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: flex-end;
 }
 
 .run-recap-cta {

@@ -12,6 +12,7 @@ export function RunRecapPanel({
   enabled: boolean;
   serverAiRecapConfigured: boolean;
 }) {
+  const [language, setLanguage] = useState<"en" | "ja" | "vi">("en");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [text, setText] = useState<string | null>(null);
@@ -35,7 +36,7 @@ export function RunRecapPanel({
         method: "POST",
         headers,
         credentials: "include",
-        body: JSON.stringify({}),
+        body: JSON.stringify({ language }),
       });
       const raw = await res.text();
       let j: { text?: string; error?: string; code?: string } = {};
@@ -96,6 +97,21 @@ export function RunRecapPanel({
       </p>
 
       <div className="run-recap-quickaction">
+        <div className="gemini-field" style={{ minWidth: "12rem" }}>
+          <label className="muted" style={{ fontSize: "0.84rem" }}>
+            Recap language
+          </label>
+          <select
+            className="gemini-select"
+            value={language}
+            disabled={loading}
+            onChange={(e) => setLanguage(e.target.value as "en" | "ja" | "vi")}
+          >
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+            <option value="vi">Tiếng Việt</option>
+          </select>
+        </div>
         <button
           type="button"
           className="btn btn-primary run-recap-cta"
@@ -103,7 +119,7 @@ export function RunRecapPanel({
           title={!canGenerateRecap ? "AI recap is currently unavailable" : undefined}
           onClick={() => void generate()}
         >
-          {loading ? "Generating…" : "Generate recap"}
+          {loading ? "Generating…" : text ? "Regenerate recap" : "Generate recap"}
         </button>
       </div>
 
