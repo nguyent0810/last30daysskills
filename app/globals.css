@@ -791,6 +791,12 @@ code {
   margin-top: 0.25rem;
 }
 
+.job-brief,
+.job-highlights,
+.job-sources {
+  margin-top: 1.4rem;
+}
+
 .job-run-status-banner {
   margin: 0.75rem 0 0;
   max-width: 42rem;
@@ -909,9 +915,9 @@ code {
 }
 
 .digest {
-  margin-top: 2.25rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--color-border);
+  margin-top: 0.6rem;
+  padding-top: 0;
+  border-top: 0;
 }
 
 .digest__grid {
@@ -994,6 +1000,12 @@ code {
   border-top: 1px solid var(--color-border);
 }
 
+.report-section--workspace {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
 .report-section__head {
   display: flex;
   flex-wrap: wrap;
@@ -1031,6 +1043,75 @@ code {
 
 .report-expand__btn {
   font-size: 0.9rem;
+}
+
+.output-workspace {
+  margin-top: 1.8rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.output-workspace__title {
+  margin-bottom: 0.25rem;
+}
+
+.output-workspace__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+}
+
+.workspace-tab {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-raised);
+  color: var(--color-muted);
+  padding: 0.35rem 0.62rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.workspace-tab:hover {
+  color: var(--color-link);
+  border-color: rgba(110, 180, 216, 0.38);
+}
+
+.workspace-tab--active {
+  color: var(--color-text);
+  border-color: rgba(110, 180, 216, 0.45);
+  background: rgba(110, 180, 216, 0.1);
+}
+
+.output-workspace__panel {
+  margin-top: 0.85rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-sm), var(--shadow-inset-highlight);
+}
+
+.output-overview__line {
+  margin: 0 0 0.5rem;
+  line-height: 1.45;
+}
+
+.output-overview__line:last-child {
+  margin-bottom: 0;
+}
+
+.workspace-history__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.6rem;
+}
+
+.workspace-history__meta {
+  margin: 0.55rem 0 0;
+  font-size: 0.85rem;
 }
 
 .product-surface {

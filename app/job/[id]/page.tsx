@@ -61,6 +61,7 @@ type JobPayload = {
   /** Present when `aiRecapConfigured` is true; used for recap status copy only. */
   aiRecapServerKind?: "hf" | "gemini";
 };
+type WorkspaceTab = "overview" | "report" | "recap" | "history";
 
 const SOURCE_ORDER = ["hn", "polymarket", "reddit"] as const;
 
@@ -88,6 +89,7 @@ export default function JobPage() {
   const [threadArchiveBusy, setThreadArchiveBusy] = useState(false);
   const [threadArchiveError, setThreadArchiveError] = useState<string | null>(null);
   const [threadPinBusy, setThreadPinBusy] = useState(false);
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>("overview");
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -128,6 +130,10 @@ export default function JobPage() {
   useEffect(() => {
     setReportExpanded(false);
   }, [id, data?.report]);
+
+  useEffect(() => {
+    setActiveTab("overview");
+  }, [id]);
 
   useEffect(() => {
     if (!data) return;
@@ -540,33 +546,59 @@ export default function JobPage() {
           ) : null}
         </div>
       ) : (
-        <p className="thread-context-fallback">
-          This run isn’t linked to a thread. Use <strong>Run again</strong> in the Report toolbar below to use the same topic.
-        </p>
+        <div className="thread-context-bar">
+          <p className="thread-context-fallback" style={{ marginBottom: "0.6rem" }}>
+            This run is not linked to a thread yet. You can still rerun this topic.
+          </p>
+          <div className="thread-context-bar__actions">
+            <motion.button
+              type="button"
+              className="btn btn-secondary btn--sm"
+              disabled={rerunLoading || !j.topic || running}
+              onClick={() => void rerunResearch()}
+              whileTap={!(rerunLoading || !j.topic || running) ? { scale: 0.98 } : undefined}
+              transition={{ duration: 0.12, ease: SHELL_EASE }}
+            >
+              {rerunLoading ? "Starting…" : "Run again"}
+            </motion.button>
+            <Link href="/history" className="btn btn-ghost btn--sm">
+              History
+            </Link>
+          </div>
+          {rerunError ? (
+            <p className="error" role="alert" style={{ marginTop: "0.45rem", marginBottom: 0, fontSize: "0.86rem", lineHeight: 1.45 }}>
+              {rerunError}
+            </p>
+          ) : null}
+        </div>
       )}
 
-      <div className="job-hero">
-        <p className="job-hero__main">{heroMain}</p>
-        <p className="job-hero__factual">{heroFactual}</p>
-      </div>
+      <section className="job-brief">
+        <h2 className="section-title">Brief</h2>
+        <p className="section-hint muted">What this run found at a glance.</p>
+        <div className="job-hero">
+          <p className="job-hero__main">{heroMain}</p>
+          <p className="job-hero__factual">{heroFactual}</p>
+        </div>
 
-      <h1 className="page-title job-page__title">{j.topic}</h1>
+        <h1 className="page-title job-page__title">{j.topic}</h1>
 
-      <div className="job-meta">
-        <motion.span
-          key={j.status}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: DURATION_FAST_S, ease: SHELL_EASE }}
-          style={{ display: "inline-block" }}
-        >
-          <StatusBadge status={j.status} />
-        </motion.span>
-        {!terminal && <span className="muted">Updates every few seconds.</span>}
-        {terminal && j.status === "succeeded" && (
-          <span className="report-mode-pill">Report: {reportModeLabel(data.reportMode)}</span>
-        )}
-      </div>
+        <div className="job-meta">
+          <motion.span
+            key={j.status}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: DURATION_FAST_S, ease: SHELL_EASE }}
+            style={{ display: "inline-block" }}
+          >
+            <StatusBadge status={j.status} />
+          </motion.span>
+          {!terminal && <span className="muted">Updates every few seconds.</span>}
+          {terminal && j.status === "succeeded" && (
+            <span className="report-mode-pill">Report: {reportModeLabel(data.reportMode)}</span>
+          )}
+        </div>
+      </section>
 
       {j.error && (
         <p className="error job-page__job-error">
@@ -594,127 +626,149 @@ export default function JobPage() {
         </p>
       ) : null}
 
-      <h2 className="section-title">Sources</h2>
-      <p className="section-hint muted">Each source runs on its own. Partial failures are OK if another source delivered items.</p>
+      <section className="job-highlights">
+        <h2 className="section-title">Highlights</h2>
+        <p className="section-hint muted">Key source items surfaced by this run.</p>
+        {showDigest ? <EditorialDigest items={digestItems} /> : <p className="muted">Highlights appear once source items are available.</p>}
+      </section>
 
-      {!terminal && orderedRuns.length === 0 ? (
-        <p className="muted">Gathering sources…</p>
-      ) : (
-        <div className="source-cards">
-          {orderedRuns.map((r) => {
-            const st = sourceCardStatus(r);
-            const badgeClass =
-              st === "failed" ? "source-card__badge source-card__badge--fail" : st === "empty" ? "source-card__badge source-card__badge--empty" : "source-card__badge source-card__badge--ok";
-            return (
-              <div key={r.source} className="source-card">
-                <div className="source-card__head">
-                  <span className="source-card__name">{sourceLabel(r.source)}</span>
-                  <span className={badgeClass}>{sourceCardStatusLabel(st)}</span>
-                </div>
-                <div className="source-card__count">
-                  {r.status === "failed" ? (
-                    <span className="muted">—</span>
-                  ) : (
-                    <>
-                      {r.itemCount} {r.itemCount === 1 ? "item" : "items"}
-                    </>
-                  )}
-                </div>
-                <p className="source-card__interpret">{sourceInterpretation(r, j.topic)}</p>
-              </div>
-            );
-          })}
+      <section className="output-workspace" aria-label="Output workspace">
+        <h2 className="section-title output-workspace__title">Output workspace</h2>
+        <p className="section-hint muted">Switch between overview, full report, AI recap, and compact continuity.</p>
+        <div className="output-workspace__tabs" role="tablist" aria-label="Output sections">
+          <button type="button" role="tab" aria-selected={activeTab === "overview"} className={activeTab === "overview" ? "workspace-tab workspace-tab--active" : "workspace-tab"} onClick={() => setActiveTab("overview")}>
+            Overview
+          </button>
+          <button type="button" role="tab" aria-selected={activeTab === "report"} className={activeTab === "report" ? "workspace-tab workspace-tab--active" : "workspace-tab"} onClick={() => setActiveTab("report")}>
+            Full report
+          </button>
+          <button type="button" role="tab" aria-selected={activeTab === "recap"} className={activeTab === "recap" ? "workspace-tab workspace-tab--active" : "workspace-tab"} onClick={() => setActiveTab("recap")}>
+            AI recap
+          </button>
+          <button type="button" role="tab" aria-selected={activeTab === "history"} className={activeTab === "history" ? "workspace-tab workspace-tab--active" : "workspace-tab"} onClick={() => setActiveTab("history")}>
+            History
+          </button>
         </div>
-      )}
 
-      {showDigest ? <EditorialDigest items={digestItems} /> : null}
+        <div className="output-workspace__panel">
+          {activeTab === "overview" ? (
+            <div>
+              <p className="muted output-overview__line">Use this workspace to move from quick orientation to detailed output.</p>
+              <p className="muted output-overview__line">{terminal && reportTrim ? "Report is ready in Full report." : "Report appears in Full report after this run completes."}</p>
+              <p className="muted output-overview__line">AI recap is generated on demand in the AI recap tab and is not saved.</p>
+              <p className="muted output-overview__line">
+                {thread ? `This run belongs to a thread with ${thread.runCount ?? 0} ${(thread.runCount ?? 0) === 1 ? "run" : "runs"}.` : "This run is currently standalone and can be rerun from thread context."}
+              </p>
+            </div>
+          ) : null}
 
-      <div className="report-section">
-        <div className="report-section__head">
-          <h2 className="section-title report-section__title">Report</h2>
-          <div className="job-toolbar">
-            <motion.button
-              type="button"
-              className="btn btn-secondary"
-              disabled={!canCopyReport}
-              title="Copy the report body only (markdown as stored)"
-              onClick={() => void copyReport()}
-              whileTap={canCopyReport ? { scale: 0.98 } : undefined}
-              transition={{ duration: 0.12, ease: SHELL_EASE }}
-            >
-              Copy report
-            </motion.button>
-            <motion.button
-              type="button"
-              className="btn btn-secondary"
-              disabled={!canDownloadMarkdown}
-              title="Download topic, full report, and source links as a Markdown file"
-              onClick={() => downloadMarkdown()}
-              whileTap={canDownloadMarkdown ? { scale: 0.98 } : undefined}
-              transition={{ duration: 0.12, ease: SHELL_EASE }}
-            >
-              Download Markdown
-            </motion.button>
-            {!thread ? (
-              <motion.button
-                type="button"
-                className="btn btn-secondary"
-                disabled={rerunLoading || !j.topic || running}
-                onClick={() => void rerunResearch()}
-                whileTap={!(rerunLoading || !j.topic || running) ? { scale: 0.98 } : undefined}
-                transition={{ duration: 0.12, ease: SHELL_EASE }}
-              >
-                {rerunLoading ? "Starting…" : "Run again"}
-              </motion.button>
-            ) : null}
-            <motion.span whileTap={{ scale: 0.98 }} transition={{ duration: 0.12, ease: SHELL_EASE }} style={{ display: "inline-block" }}>
-              <Link href="/history" className="btn btn-ghost">
-                History
-              </Link>
-            </motion.span>
-          </div>
-          {running ? (
-            <p className="muted" style={{ marginTop: "0.35rem", fontSize: "0.88rem" }}>
-              This run is still in progress.
-            </p>
+          {activeTab === "report" ? (
+            <div className="report-section report-section--workspace">
+              <div className="report-section__head">
+                <h3 className="section-title report-section__title">Full report</h3>
+                <div className="job-toolbar">
+                  <motion.button type="button" className="btn btn-secondary" disabled={!canCopyReport} title="Copy the report body only (markdown as stored)" onClick={() => void copyReport()} whileTap={canCopyReport ? { scale: 0.98 } : undefined} transition={{ duration: 0.12, ease: SHELL_EASE }}>
+                    Copy report
+                  </motion.button>
+                  <motion.button type="button" className="btn btn-secondary" disabled={!canDownloadMarkdown} title="Download topic, full report, and source links as a Markdown file" onClick={() => downloadMarkdown()} whileTap={canDownloadMarkdown ? { scale: 0.98 } : undefined} transition={{ duration: 0.12, ease: SHELL_EASE }}>
+                    Download Markdown
+                  </motion.button>
+                </div>
+                {running ? (
+                  <p className="muted" style={{ marginTop: "0.35rem", fontSize: "0.88rem" }}>
+                    This run is still in progress.
+                  </p>
+                ) : null}
+              </div>
+              {copyMsg && <p className="copy-toast">{copyMsg}</p>}
+              {data.report && reportPreview?.hasMore && !reportExpanded ? (
+                <p className="section-hint muted report-section__hint">Showing the top findings first — expand for sources and the complete write-up.</p>
+              ) : null}
+
+              {data.report && reportMarkdown ? (
+                <>
+                  <article className="report-md report-md--shell">
+                    <ReactMarkdown>{reportMarkdown}</ReactMarkdown>
+                  </article>
+                  {reportPreview?.hasMore ? (
+                    <div className="report-expand">
+                      <motion.button type="button" className="btn btn-ghost report-expand__btn" onClick={() => setReportExpanded((e) => !e)} whileTap={{ scale: 0.98 }} transition={{ duration: 0.12, ease: SHELL_EASE }}>
+                        {reportExpanded ? "Show condensed view" : "Show full report"}
+                      </motion.button>
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <p className="muted">{terminal ? "No report was stored for this run." : "Report appears when the run finishes."}</p>
+              )}
+            </div>
+          ) : null}
+
+          {activeTab === "recap" ? (
+            <RunRecapPanel jobId={id} enabled={showRunRecapSection} serverAiRecapConfigured={Boolean(data.aiRecapConfigured)} />
+          ) : null}
+
+          {activeTab === "history" ? (
+            <div className="workspace-history">
+              <h3 className="section-title report-section__title">History</h3>
+              <p className="muted">In-context continuity for this run. Open the full thread or History page for complete browsing.</p>
+              <div className="workspace-history__actions">
+                {thread ? (
+                  <Link href={`/research/${thread.id}`} className="btn btn-secondary btn--sm">
+                    Open thread
+                  </Link>
+                ) : null}
+                <Link href="/history" className="btn btn-ghost btn--sm">
+                  Open History
+                </Link>
+              </div>
+              <p className="muted workspace-history__meta">Current run: {j.id} · Updated {new Date(j.updatedAt).toLocaleString()}</p>
+              {thread ? (
+                <p className="muted workspace-history__meta">
+                  Thread: {thread.runCount ?? 0} {(thread.runCount ?? 0) === 1 ? "run" : "runs"}
+                  {threadArchived ? " · Archived" : ""}
+                </p>
+              ) : (
+                <p className="muted workspace-history__meta">No thread is linked to this run yet.</p>
+              )}
+            </div>
           ) : null}
         </div>
-        <RunRecapPanel
-          jobId={id}
-          enabled={showRunRecapSection}
-          serverAiRecapConfigured={Boolean(data.aiRecapConfigured)}
-        />
-        {copyMsg && <p className="copy-toast">{copyMsg}</p>}
-        {!thread && rerunError ? <p className="error" style={{ marginTop: "0.35rem" }}>{rerunError}</p> : null}
-        {data.report && reportPreview?.hasMore && !reportExpanded ? (
-          <p className="section-hint muted report-section__hint">Showing the top findings first — expand for sources and the complete write-up.</p>
-        ) : null}
+      </section>
 
-        {data.report && reportMarkdown ? (
-          <>
-            <article className="report-md report-md--shell">
-              <ReactMarkdown>{reportMarkdown}</ReactMarkdown>
-            </article>
-            {reportPreview?.hasMore ? (
-              <div className="report-expand">
-                <motion.button
-                  type="button"
-                  className="btn btn-ghost report-expand__btn"
-                  onClick={() => setReportExpanded((e) => !e)}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ duration: 0.12, ease: SHELL_EASE }}
-                >
-                  {reportExpanded ? "Show condensed view" : "Show full report"}
-                </motion.button>
-              </div>
-            ) : null}
-          </>
+      <section className="job-sources">
+        <h2 className="section-title">Sources</h2>
+        <p className="section-hint muted">Each source runs independently. Partial failures can still yield useful evidence.</p>
+        {!terminal && orderedRuns.length === 0 ? (
+          <p className="muted">Gathering sources…</p>
         ) : (
-          <p className="muted">
-            {terminal ? "No report was stored for this run." : "Report appears when the run finishes."}
-          </p>
+          <div className="source-cards">
+            {orderedRuns.map((r) => {
+              const st = sourceCardStatus(r);
+              const badgeClass =
+                st === "failed" ? "source-card__badge source-card__badge--fail" : st === "empty" ? "source-card__badge source-card__badge--empty" : "source-card__badge source-card__badge--ok";
+              return (
+                <div key={r.source} className="source-card">
+                  <div className="source-card__head">
+                    <span className="source-card__name">{sourceLabel(r.source)}</span>
+                    <span className={badgeClass}>{sourceCardStatusLabel(st)}</span>
+                  </div>
+                  <div className="source-card__count">
+                    {r.status === "failed" ? (
+                      <span className="muted">—</span>
+                    ) : (
+                      <>
+                        {r.itemCount} {r.itemCount === 1 ? "item" : "items"}
+                      </>
+                    )}
+                  </div>
+                  <p className="source-card__interpret">{sourceInterpretation(r, j.topic)}</p>
+                </div>
+              );
+            })}
+          </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }
