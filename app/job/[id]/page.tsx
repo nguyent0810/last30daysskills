@@ -574,8 +574,8 @@ export default function JobPage() {
       )}
 
       <section className="job-brief">
-        <h2 className="section-title">Brief</h2>
-        <p className="section-hint muted">What this run found at a glance.</p>
+        <h2 className="section-title">What we found</h2>
+        <p className="section-hint muted">Quick takeaway first: what matters most before you read deeper.</p>
         <div className="job-hero">
           <p className="job-hero__main">{heroMain}</p>
           <p className="job-hero__factual">{heroFactual}</p>
@@ -627,14 +627,14 @@ export default function JobPage() {
       ) : null}
 
       <section className="job-highlights">
-        <h2 className="section-title">Highlights</h2>
-        <p className="section-hint muted">Key source items surfaced by this run.</p>
-        {showDigest ? <EditorialDigest items={digestItems} /> : <p className="muted">Highlights appear once source items are available.</p>}
+        <h2 className="section-title">Key findings</h2>
+        <p className="section-hint muted">Start here for the strongest source-backed findings from this run.</p>
+        {showDigest ? <EditorialDigest items={digestItems} /> : <p className="muted">Key findings appear when source evidence is available.</p>}
       </section>
 
       <section className="output-workspace" aria-label="Output workspace">
-        <h2 className="section-title output-workspace__title">Output workspace</h2>
-        <p className="section-hint muted">Switch between overview, full report, AI recap, and compact continuity.</p>
+        <h2 className="section-title output-workspace__title">Research output</h2>
+        <p className="section-hint muted">Choose the format that matches what you need next.</p>
         <div className="output-workspace__tabs" role="tablist" aria-label="Output sections">
           <button type="button" role="tab" aria-selected={activeTab === "overview"} className={activeTab === "overview" ? "workspace-tab workspace-tab--active" : "workspace-tab"} onClick={() => setActiveTab("overview")}>
             Overview
@@ -653,11 +653,19 @@ export default function JobPage() {
         <div className="output-workspace__panel">
           {activeTab === "overview" ? (
             <div>
-              <p className="muted output-overview__line">Use this workspace to move from quick orientation to detailed output.</p>
-              <p className="muted output-overview__line">{terminal && reportTrim ? "Report is ready in Full report." : "Report appears in Full report after this run completes."}</p>
-              <p className="muted output-overview__line">AI recap is generated on demand in the AI recap tab and is not saved.</p>
               <p className="muted output-overview__line">
-                {thread ? `This run belongs to a thread with ${thread.runCount ?? 0} ${(thread.runCount ?? 0) === 1 ? "run" : "runs"}.` : "This run is currently standalone and can be rerun from thread context."}
+                <strong>Full report:</strong> Best when you want complete context, evidence, and detailed reasoning.
+              </p>
+              <p className="muted output-overview__line">
+                <strong>AI recap:</strong> Best when you need a fast, skimmable summary before sharing or deciding.
+              </p>
+              <p className="muted output-overview__line">
+                <strong>History:</strong> Best when you want continuity across runs in the same thread.
+              </p>
+              <p className="muted output-overview__line">
+                {terminal && reportTrim
+                  ? "This run is ready for review."
+                  : "This run is still building output. Start with Overview, then open Full report when ready."}
               </p>
             </div>
           ) : null}

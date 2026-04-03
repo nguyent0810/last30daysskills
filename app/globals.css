@@ -787,6 +787,10 @@ code {
   margin: 0 auto;
 }
 
+.page-shell.job-page {
+  max-width: 72rem;
+}
+
 .job-page__title {
   margin-top: 0.25rem;
 }
@@ -1086,7 +1090,7 @@ code {
 
 .output-workspace__panel {
   margin-top: 0.85rem;
-  padding: 0.95rem 1rem;
+  padding: 1.05rem 1.15rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   background: var(--color-surface-raised);
