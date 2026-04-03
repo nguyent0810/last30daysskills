@@ -13,6 +13,7 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "dotenv -e .env.local -e .env -- drizzle-kit push",
     "db:migrate:incremental": "dotenv -e .env.local -e .env -- tsx scripts/apply-incremental-columns.ts",
+    "db:verify-schema": "dotenv -e .env.local -e .env -- tsx scripts/verify-researches-schema.ts",
     "db:inspect": "dotenv -e .env.local -e .env -- tsx scripts/inspect-job.ts",
     "db:backfill-research": "dotenv -e .env.local -e .env -- tsx scripts/backfill-research.ts",
     "db:studio": "dotenv -e .env.local -e .env -- drizzle-kit studio",
