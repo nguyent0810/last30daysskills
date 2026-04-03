@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { HOME_RECENT_JOBS_LIMIT, homeRecentJobsListUrl } from "@/lib/history/history-list-view";
-import { readLocalGeminiApiKey } from "@/lib/ai/run-recap/byok-local";
 import { mapRecapErrorToUi } from "@/lib/ai/run-recap/ui-copy";
 
 type HomeRecentLatestRun = {
@@ -112,7 +111,6 @@ export default function HomePage() {
   }, []);
 
   async function runHomeRecap(runId: string) {
-    const localGeminiKey = readLocalGeminiApiKey();
     setHomeRecap({
       runId,
       loading: true,
@@ -122,16 +120,9 @@ export default function HomePage() {
       copyMsg: null,
     });
     try {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      if (localGeminiKey) {
-        headers["X-Gemini-API-Key"] = localGeminiKey;
-      }
-
       const res = await fetch(`/api/jobs/${runId}/ai-recap`, {
         method: "POST",
-        headers,
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({}),
       });
@@ -147,7 +138,6 @@ export default function HomePage() {
         const mapped = mapRecapErrorToUi({
           code: j.code,
           error: j.error ?? raw ?? res.statusText,
-          usingGeminiKey: Boolean(localGeminiKey),
         });
         setHomeRecap({
           runId,

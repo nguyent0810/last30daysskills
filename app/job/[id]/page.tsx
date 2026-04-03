@@ -683,7 +683,6 @@ export default function JobPage() {
           jobId={id}
           enabled={showRunRecapSection}
           serverAiRecapConfigured={Boolean(data.aiRecapConfigured)}
-          serverKind={data.aiRecapServerKind}
         />
         {copyMsg && <p className="copy-toast">{copyMsg}</p>}
         {!thread && rerunError ? <p className="error" style={{ marginTop: "0.35rem" }}>{rerunError}</p> : null}

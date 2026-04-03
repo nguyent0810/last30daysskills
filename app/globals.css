@@ -642,17 +642,6 @@ code {
   min-width: 11.5rem;
 }
 
-.run-recap-advanced {
-  margin-top: 0.55rem;
-  color: var(--color-muted);
-  font-size: 0.85rem;
-}
-
-.run-recap-advanced summary {
-  cursor: pointer;
-  user-select: none;
-}
-
 .run-recap-details {
   margin-top: 0.45rem;
 }
