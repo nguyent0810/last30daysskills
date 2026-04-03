@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { desc, eq } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 import { jsonFromRouteError } from "@/lib/api/route-error-response";
 import { getDb } from "@/lib/db";
 import { reports, researchItems, researches, researchJobs, researchSourceRuns } from "@/lib/db/schema";
 import { getAnonymousUserIdIfPresent } from "@/lib/auth/anonymous";
 import { resolveJobDetailThread } from "@/lib/jobs/job-detail-thread";
+import type { JobDetailThreadPayload } from "@/lib/jobs/job-detail-thread";
 import { toReportModeApi } from "@/lib/report-mode";
 
 export const dynamic = "force-dynamic";
@@ -77,6 +78,7 @@ export async function GET(
       topic: string;
       displayTitle: string | null;
       userId: string;
+      archivedAt: Date | null;
     } | null = null;
     if (job.researchId != null) {
       const [r] = await db
@@ -85,6 +87,7 @@ export async function GET(
           topic: researches.topic,
           displayTitle: researches.displayTitle,
           userId: researches.userId,
+          archivedAt: researches.archivedAt,
         })
         .from(researches)
         .where(eq(researches.id, job.researchId))
@@ -95,11 +98,24 @@ export async function GET(
             topic: r.topic,
             displayTitle: r.displayTitle ?? null,
             userId: r.userId,
+            archivedAt: r.archivedAt ?? null,
           }
         : null;
     }
 
-    const thread = resolveJobDetailThread(job.researchId ?? null, researchRow, userId);
+    const threadBase = resolveJobDetailThread(job.researchId ?? null, researchRow, userId);
+    let thread: JobDetailThreadPayload | null = threadBase;
+    if (threadBase && job.researchId) {
+      const [cntRow] = await db
+        .select({ c: count() })
+        .from(researchJobs)
+        .where(eq(researchJobs.researchId, job.researchId));
+      thread = {
+        ...threadBase,
+        archivedAt: researchRow?.archivedAt ? researchRow.archivedAt.toISOString() : null,
+        runCount: Number(cntRow?.c ?? 0),
+      };
+    }
 
     return NextResponse.json({
       job: {
@@ -111,7 +127,7 @@ export async function GET(
         createdAt: job.createdAt,
         updatedAt: job.updatedAt,
       },
-      thread,
+      thread: thread,
       report: report?.content ?? null,
       reportMode: toReportModeApi(report?.reportMode),
       sourceRuns: runs,

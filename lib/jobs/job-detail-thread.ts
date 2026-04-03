@@ -6,6 +6,10 @@ export type JobDetailThreadPayload = {
   id: string;
   topic: string;
   displayTitle: string | null;
+  /** ISO string when present on GET /api/jobs/[id] */
+  archivedAt?: string | null;
+  /** Number of runs on this thread */
+  runCount?: number;
 };
 
 /**
@@ -15,7 +19,7 @@ export type JobDetailThreadPayload = {
 export function resolveJobDetailThread(
   researchId: string | null,
   researchRow:
-    | { id: string; topic: string; displayTitle: string | null; userId: string }
+    | { id: string; topic: string; displayTitle: string | null; userId: string; archivedAt?: Date | null }
     | null
     | undefined,
   sessionUserId: string

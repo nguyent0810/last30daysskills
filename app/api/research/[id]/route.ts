@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { insightLineFromReport } from "@/lib/job-page/run-insight-line";
 import { jsonFromRouteError } from "@/lib/api/route-error-response";
 import { getAnonymousUserIdIfPresent } from "@/lib/auth/anonymous";
 import { getDb } from "@/lib/db";
@@ -50,12 +51,29 @@ export async function GET(_request: Request, { params }: { params: { id: string 
       .where(and(eq(researchJobs.researchId, id), eq(researchJobs.userId, userId)))
       .orderBy(desc(researchJobs.createdAt));
 
-    const runs = runRows.map((row) => ({
+    const runsBase = runRows.map((row) => ({
       id: row.id,
       status: row.status,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       reportMode: toReportModeApi(row.reportModeStored),
+    }));
+
+    const runIds = runsBase.map((r) => r.id);
+    const reportLines =
+      runIds.length > 0
+        ? await db
+            .select({ jobId: reports.jobId, content: reports.content })
+            .from(reports)
+            .where(inArray(reports.jobId, runIds))
+        : [];
+    const insightByJobId = new Map(
+      reportLines.map((row) => [row.jobId, insightLineFromReport(row.content)])
+    );
+
+    const runs = runsBase.map((row) => ({
+      ...row,
+      insightLine: insightByJobId.get(row.id) ?? null,
     }));
 
     let sincePreviousRun: { newLinkCount: number } | null = null;

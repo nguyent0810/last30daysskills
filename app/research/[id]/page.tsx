@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { DURATION_FAST_S, SHELL_EASE, shellTransitionMedium, staggerDelay } from "@/lib/motion/shell";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { ReportModeApi } from "@/lib/report-mode";
@@ -15,6 +15,7 @@ type RunRow = {
   createdAt: string;
   updatedAt: string;
   reportMode: ReportModeApi;
+  insightLine?: string | null;
 };
 
 type Payload = {
@@ -38,9 +39,10 @@ function formatTime(iso: string): string {
   });
 }
 
-export default function ResearchPage() {
+function ResearchPageBody() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const id = typeof params.id === "string" ? params.id : "";
   const [data, setData] = useState<Payload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -135,7 +137,7 @@ export default function ResearchPage() {
     if (!id) return;
     const trimmed = renameDraft.trim();
     if (trimmed.length === 0) {
-      setRenameError("Enter a non-empty title, or use “Remove custom title” to clear.");
+      setRenameError("Enter a title, or use Clear label to show the topic again.");
       return;
     }
     setRenameBusy(true);
@@ -215,6 +217,14 @@ export default function ResearchPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (searchParams.get("rename") !== "1" || !data || !id) return;
+    setRenameDraft(data.research.displayTitle ?? "");
+    setRenameError(null);
+    setRenameOpen(true);
+    router.replace(`/research/${id}`, { scroll: false });
+  }, [searchParams, data, id, router]);
 
   async function rerunTopic() {
     if (!id) return;
@@ -312,7 +322,7 @@ export default function ResearchPage() {
             fontSize: "0.92rem",
           }}
         >
-          <span style={{ fontWeight: 600 }}>This thread is archived.</span> Hidden from History until you unarchive or start a new run.
+          <span style={{ fontWeight: 600 }}>This thread is archived.</span> It stays out of History until you unarchive or run again.
           <div style={{ marginTop: "0.5rem" }}>
             <button
               type="button"
@@ -337,8 +347,9 @@ export default function ResearchPage() {
         <h1 className="page-title" style={{ marginBottom: "0.35rem" }}>
           {threadLabel}
         </h1>
-        <p className="muted" style={{ margin: 0, fontSize: "0.9rem", maxWidth: "38rem" }}>
-          Continue this thread here—start a new run or open a saved run below.
+        <p className="thread-page__topic">Topic: {r.topic}</p>
+        <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.9rem", maxWidth: "38rem" }}>
+          Run again on the same topic, or open a saved run below.
         </p>
       </motion.header>
 
@@ -349,7 +360,7 @@ export default function ResearchPage() {
           disabled={rerunLoading}
           onClick={() => void rerunTopic()}
         >
-          {rerunLoading ? "Starting your run…" : "Start new run"}
+          {rerunLoading ? "Starting…" : "Run again"}
         </button>
         {rerunError ? <p className="error" style={{ marginTop: "0.5rem" }}>{rerunError}</p> : null}
       </div>
@@ -357,7 +368,7 @@ export default function ResearchPage() {
       {renameOpen ? (
         <div style={{ marginTop: "1.25rem", paddingTop: "1.25rem", borderTop: "1px solid var(--border, #e5e5e5)" }}>
           <label htmlFor="thread-rename-input" className="muted" style={{ display: "block", fontSize: "0.88rem", marginBottom: "0.35rem" }}>
-            Display title (your topic for new runs stays the same)
+            Display title (topic for new runs stays the same)
           </label>
           <input
             id="thread-rename-input"
@@ -386,12 +397,12 @@ export default function ResearchPage() {
             </button>
             {r.displayTitle != null && r.displayTitle.trim().length > 0 ? (
               <button type="button" className="btn btn-secondary" disabled={renameBusy} onClick={() => void clearDisplayTitle()}>
-                Remove custom title
+                Clear label
               </button>
             ) : null}
           </div>
           <p className="muted" style={{ marginTop: "0.5rem", fontSize: "0.85rem", maxWidth: "36rem" }}>
-            Original topic: <span style={{ fontStyle: "italic" }}>{r.topic}</span>
+            Topic: <span style={{ fontStyle: "italic" }}>{r.topic}</span>
           </p>
           {renameError ? <p className="error" style={{ marginTop: "0.5rem" }}>{renameError}</p> : null}
         </div>
@@ -403,7 +414,7 @@ export default function ResearchPage() {
             </p>
           ) : null}
           <p className="muted" style={{ marginTop: data.sincePreviousRun ? "0.35rem" : "0.85rem", fontSize: "0.88rem", maxWidth: "38rem" }}>
-            Open a saved run below for its report and sources. You can rename the thread or archive it from the links below.
+            Open a run below for its report and sources, or rename / archive this thread.
           </p>
           <div
             style={{
@@ -445,7 +456,7 @@ export default function ResearchPage() {
             No runs yet
           </p>
           <p className="muted" style={{ marginTop: "0.45rem", lineHeight: 1.5 }}>
-            Use Start new run above to fetch sources and build a report for this topic. Come back here anytime to open saved runs for this thread.
+            Use Run again above to fetch sources and build a report for this topic. You can return here anytime to open runs in this thread.
           </p>
         </div>
       ) : (
@@ -484,11 +495,34 @@ export default function ResearchPage() {
                     </span>
                   ) : null}
                 </div>
+                {run.insightLine ? <p className="thread-run-insight">{run.insightLine}</p> : null}
+                <span className="muted" style={{ fontSize: "0.82rem", marginTop: "0.35rem", display: "inline-block" }}>
+                  Open run →
+                </span>
               </Link>
             </motion.li>
           ))}
         </ul>
       )}
     </div>
+  );
+}
+
+export default function ResearchPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="page-shell">
+          <p className="breadcrumb">
+            <Link href="/">Home</Link>
+            {" · "}
+            <Link href="/history">History</Link>
+          </p>
+          <div className="loading-block muted">Loading thread…</div>
+        </div>
+      }
+    >
+      <ResearchPageBody />
+    </Suspense>
   );
 }

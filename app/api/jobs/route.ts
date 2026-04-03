@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { and, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
+import { and, count, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { jsonFromRouteError } from "@/lib/api/route-error-response";
 import { getOrCreateAnonymousUser } from "@/lib/auth/anonymous";
 import { getDb } from "@/lib/db";
 import { reports, researches, researchJobs } from "@/lib/db/schema";
+import { insightLineFromReport } from "@/lib/job-page/run-insight-line";
 import { createResearchRun } from "@/lib/jobs/create-research-run";
 import { toReportModeApi } from "@/lib/report-mode";
 
@@ -94,6 +95,21 @@ export async function GET(request: Request) {
 
     const researchIds = researchList.map((r) => r.id);
 
+    const runCountRows =
+      researchIds.length > 0
+        ? await db
+            .select({
+              researchId: researchJobs.researchId,
+              cnt: count(),
+            })
+            .from(researchJobs)
+            .where(and(eq(researchJobs.userId, userId), inArray(researchJobs.researchId, researchIds)))
+            .groupBy(researchJobs.researchId)
+        : [];
+    const runCountByResearch = new Map(
+      runCountRows.filter((row) => row.researchId != null).map((row) => [row.researchId as string, Number(row.cnt)])
+    );
+
     const jobRows = await db
       .select({
         id: researchJobs.id,
@@ -128,6 +144,18 @@ export async function GET(request: Request) {
       }
     }
 
+    const latestJobIds = [...latestByResearch.values()].map((j) => j.id);
+    const reportRows =
+      latestJobIds.length > 0
+        ? await db
+            .select({ jobId: reports.jobId, content: reports.content })
+            .from(reports)
+            .where(inArray(reports.jobId, latestJobIds))
+        : [];
+    const insightByJobId = new Map(
+      reportRows.map((row) => [row.jobId, insightLineFromReport(row.content)])
+    );
+
     const researchesPayload = researchList.map((r) => {
       const jr = latestByResearch.get(r.id);
       return {
@@ -135,12 +163,14 @@ export async function GET(request: Request) {
         topic: r.topic,
         displayTitle: r.displayTitle ?? null,
         updatedAt: r.updatedAt,
+        runCount: runCountByResearch.get(r.id) ?? 0,
         latestRun: jr
           ? {
               id: jr.id,
               status: jr.status,
               createdAt: jr.createdAt,
               reportMode: toReportModeApi(jr.reportModeStored),
+              insightLine: insightByJobId.get(jr.id) ?? null,
             }
           : null,
       };

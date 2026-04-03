@@ -25,7 +25,6 @@ import {
   sourceCardStatusLabel,
   sourceInterpretation,
 } from "@/lib/job-page/source-interpretation";
-import { threadOrientationForUi } from "@/lib/jobs/job-detail-thread";
 
 type SourceRun = {
   source: string;
@@ -44,7 +43,13 @@ type JobPayload = {
     createdAt: string;
     updatedAt: string;
   };
-  thread: { id: string; topic: string; displayTitle: string | null } | null;
+  thread: {
+    id: string;
+    topic: string;
+    displayTitle: string | null;
+    archivedAt?: string | null;
+    runCount?: number;
+  } | null;
   report: string | null;
   reportMode: ReportModeApi;
   sourceRuns: SourceRun[];
@@ -71,6 +76,12 @@ export default function JobPage() {
   const [rerunLoading, setRerunLoading] = useState(false);
   const [rerunError, setRerunError] = useState<string | null>(null);
   const [reportExpanded, setReportExpanded] = useState(false);
+  const [threadRenameOpen, setThreadRenameOpen] = useState(false);
+  const [threadRenameDraft, setThreadRenameDraft] = useState("");
+  const [threadRenameBusy, setThreadRenameBusy] = useState(false);
+  const [threadRenameError, setThreadRenameError] = useState<string | null>(null);
+  const [threadArchiveBusy, setThreadArchiveBusy] = useState(false);
+  const [threadArchiveError, setThreadArchiveError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -97,6 +108,9 @@ export default function JobPage() {
     setData({ ...raw, thread: raw.thread ?? null });
     setError(null);
     setRerunError(null);
+    setThreadRenameOpen(false);
+    setThreadRenameError(null);
+    setThreadArchiveError(null);
   }, [id]);
 
   useEffect(() => {
@@ -161,6 +175,100 @@ export default function JobPage() {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+  }
+
+  async function archiveThreadFromRun() {
+    if (!data?.thread) return;
+    setThreadArchiveBusy(true);
+    setThreadArchiveError(null);
+    try {
+      const res = await fetch(`/api/research/${data.thread.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ archived: true }),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        let msg = text || res.statusText;
+        try {
+          const j = JSON.parse(text) as { error?: string };
+          if (j.error) msg = j.error;
+        } catch {
+          /* plain */
+        }
+        setThreadArchiveError(msg);
+        return;
+      }
+      await load();
+    } finally {
+      setThreadArchiveBusy(false);
+    }
+  }
+
+  async function saveThreadRenameFromRun() {
+    if (!data?.thread) return;
+    const trimmed = threadRenameDraft.trim();
+    if (!trimmed.length) {
+      setThreadRenameError("Enter a title or use “Clear label” to show the topic again.");
+      return;
+    }
+    setThreadRenameBusy(true);
+    setThreadRenameError(null);
+    try {
+      const res = await fetch(`/api/research/${data.thread.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ displayTitle: trimmed }),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        let msg = text || res.statusText;
+        try {
+          const j = JSON.parse(text) as { error?: string };
+          if (j.error) msg = j.error;
+        } catch {
+          /* plain */
+        }
+        setThreadRenameError(msg);
+        return;
+      }
+      setThreadRenameOpen(false);
+      await load();
+    } finally {
+      setThreadRenameBusy(false);
+    }
+  }
+
+  async function clearThreadLabelFromRun() {
+    if (!data?.thread) return;
+    setThreadRenameBusy(true);
+    setThreadRenameError(null);
+    try {
+      const res = await fetch(`/api/research/${data.thread.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ displayTitle: null }),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        let msg = text || res.statusText;
+        try {
+          const j = JSON.parse(text) as { error?: string };
+          if (j.error) msg = j.error;
+        } catch {
+          /* plain */
+        }
+        setThreadRenameError(msg);
+        return;
+      }
+      setThreadRenameOpen(false);
+      await load();
+    } finally {
+      setThreadRenameBusy(false);
+    }
   }
 
   async function rerunResearch() {
@@ -260,7 +368,9 @@ export default function JobPage() {
   const heroMain = running ? heroRunning.main : mainInsightLine(j.topic, orderedRuns, heroTopItems);
   const heroFactual = running ? heroRunning.factual : factualInsightLine(orderedRuns);
 
-  const threadUi = threadOrientationForUi(data.thread);
+  const thread = data.thread;
+  const threadLabel = thread ? thread.displayTitle?.trim() || thread.topic : "";
+  const threadArchived = Boolean(thread?.archivedAt);
 
   const reportMarkdown =
     data.report && (reportExpanded || !reportPreview?.hasMore) ? data.report : (reportPreview?.collapsed ?? data.report ?? null);
@@ -279,19 +389,117 @@ export default function JobPage() {
         ) : null}
       </p>
 
+      {thread ? (
+        <div className="thread-context-bar">
+          <p className="thread-context-bar__title">{threadLabel}</p>
+          <p className="thread-context-bar__topic">Topic: {thread.topic}</p>
+          <p className="thread-context-bar__meta">
+            {(thread.runCount ?? 0) === 0
+              ? "No other runs yet"
+              : `${thread.runCount ?? 0} ${(thread.runCount ?? 0) === 1 ? "run" : "runs"} in this thread`}
+            {threadArchived ? " · Archived" : ""}
+          </p>
+          {!threadRenameOpen ? (
+            <div className="thread-context-bar__actions">
+              <Link href={`/research/${thread.id}`} className="btn btn-secondary btn--sm">
+                Open thread
+              </Link>
+              <motion.button
+                type="button"
+                className="btn btn-secondary btn--sm"
+                disabled={rerunLoading || !j.topic || running}
+                onClick={() => void rerunResearch()}
+                whileTap={!(rerunLoading || !j.topic || running) ? { scale: 0.98 } : undefined}
+                transition={{ duration: 0.12, ease: SHELL_EASE }}
+              >
+                {rerunLoading ? "Starting…" : "Run again"}
+              </motion.button>
+              <button
+                type="button"
+                className="btn btn-ghost btn--sm"
+                onClick={() => {
+                  setThreadRenameDraft(thread.displayTitle ?? "");
+                  setThreadRenameError(null);
+                  setThreadRenameOpen(true);
+                }}
+              >
+                Rename thread
+              </button>
+              {!threadArchived ? (
+                <button
+                  type="button"
+                  className="btn btn-ghost btn--sm"
+                  disabled={threadArchiveBusy}
+                  onClick={() => void archiveThreadFromRun()}
+                >
+                  {threadArchiveBusy ? "Archiving…" : "Archive thread"}
+                </button>
+              ) : null}
+            </div>
+          ) : (
+            <div className="thread-context-bar__rename">
+              <label htmlFor="run-page-thread-rename" className="muted" style={{ display: "block", fontSize: "0.85rem", marginBottom: "0.35rem" }}>
+                Display title (topic for new runs stays the same)
+              </label>
+              <input
+                id="run-page-thread-rename"
+                type="text"
+                className="topic-input"
+                style={{ minHeight: "auto", maxWidth: "32rem" }}
+                maxLength={500}
+                value={threadRenameDraft}
+                disabled={threadRenameBusy}
+                onChange={(e) => setThreadRenameDraft(e.target.value)}
+                placeholder={thread.topic}
+              />
+              <div style={{ marginTop: "0.5rem", display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                <button
+                  type="button"
+                  className="btn btn-primary btn--sm"
+                  disabled={threadRenameBusy}
+                  onClick={() => void saveThreadRenameFromRun()}
+                >
+                  {threadRenameBusy ? "Saving…" : "Save"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn--sm"
+                  disabled={threadRenameBusy}
+                  onClick={() => {
+                    setThreadRenameOpen(false);
+                    setThreadRenameError(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                {thread.displayTitle != null && thread.displayTitle.trim().length > 0 ? (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn--sm"
+                    disabled={threadRenameBusy}
+                    onClick={() => void clearThreadLabelFromRun()}
+                  >
+                    Clear label
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          )}
+          {threadRenameError ? <p className="error" style={{ marginTop: "0.5rem", fontSize: "0.88rem" }}>{threadRenameError}</p> : null}
+          {threadArchiveError ? <p className="error" style={{ marginTop: "0.5rem", fontSize: "0.88rem" }}>{threadArchiveError}</p> : null}
+        </div>
+      ) : (
+        <p className="thread-context-fallback">
+          This run isn’t linked to a thread. Use <strong>Run again</strong> in the Report toolbar below to use the same topic.
+        </p>
+      )}
+
       <div className="job-hero">
         <p className="job-hero__main">{heroMain}</p>
         <p className="job-hero__factual">{heroFactual}</p>
       </div>
 
       <h1 className="page-title job-page__title">{j.topic}</h1>
-
-      {threadUi ? (
-        <p className="muted" style={{ marginTop: "0.3rem", fontSize: "0.92rem" }}>
-          Thread:{" "}
-          <Link href={threadUi.href}>{threadUi.label}</Link>
-        </p>
-      ) : null}
 
       <div className="job-meta">
         <motion.span
@@ -376,20 +584,18 @@ export default function JobPage() {
             >
               Download Markdown
             </motion.button>
-            <motion.button
-              type="button"
-              className="btn btn-secondary"
-              disabled={rerunLoading || !j.topic || running}
-              onClick={() => void rerunResearch()}
-              whileTap={!(rerunLoading || !j.topic || running) ? { scale: 0.98 } : undefined}
-              transition={{ duration: 0.12, ease: SHELL_EASE }}
-            >
-              {rerunLoading
-                ? "Starting your run…"
-                : j.researchId
-                  ? "Start new run"
-                  : "Run research"}
-            </motion.button>
+            {!thread ? (
+              <motion.button
+                type="button"
+                className="btn btn-secondary"
+                disabled={rerunLoading || !j.topic || running}
+                onClick={() => void rerunResearch()}
+                whileTap={!(rerunLoading || !j.topic || running) ? { scale: 0.98 } : undefined}
+                transition={{ duration: 0.12, ease: SHELL_EASE }}
+              >
+                {rerunLoading ? "Starting…" : "Run again"}
+              </motion.button>
+            ) : null}
             <motion.span whileTap={{ scale: 0.98 }} transition={{ duration: 0.12, ease: SHELL_EASE }} style={{ display: "inline-block" }}>
               <Link href="/history" className="btn btn-ghost">
                 History
