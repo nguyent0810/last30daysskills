@@ -1,22 +1,37 @@
+/* Shadow Mission — tactical dark shell, single cool accent, quiet depth */
 :root {
-  --color-text: #141414;
-  --color-muted: #5c5c5c;
-  --color-border: #e2e2e2;
-  --color-surface: #ffffff;
-  --color-bg: #f6f6f6;
-  --color-link: #0b57d0;
-  --color-error: #b00020;
-  --color-ok-bg: #e8f5e9;
-  --color-ok-text: #1b5e20;
-  --color-fail-bg: #ffebee;
-  --color-fail-text: #c62828;
-  --color-warn-bg: #fff8e1;
-  --color-warn-text: #e65100;
-  --color-run-bg: #e3f2fd;
-  --color-run-text: #1565c0;
+  --color-bg: #0c0e11;
+  --color-surface: #141920;
+  --color-surface-raised: #1a2129;
+  --color-border: rgba(255, 255, 255, 0.07);
+  --color-border-strong: rgba(255, 255, 255, 0.12);
+  --color-text: #e9edf2;
+  --color-muted: #8b939e;
+  --color-link: #6eb4d8;
+  --color-link-hover: #8ec8e8;
+  --color-error: #e8787a;
+  --color-ok-bg: rgba(130, 200, 160, 0.12);
+  --color-ok-text: #a3d9b8;
+  --color-fail-bg: rgba(220, 120, 120, 0.12);
+  --color-fail-text: #e0a0a0;
+  --color-warn-bg: rgba(210, 175, 95, 0.1);
+  --color-warn-text: #d4b878;
+  --color-run-bg: rgba(110, 180, 216, 0.14);
+  --color-run-text: #8ec8e8;
+  --color-wait-bg: rgba(255, 255, 255, 0.06);
+  --color-wait-text: #a0a8b3;
   --radius: 8px;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-raised: 0 4px 20px rgba(0, 0, 0, 0.35);
+  --shadow-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.045);
   --max-content: 48rem;
+  /* Inline fallbacks (research page, etc.) */
+  --border: var(--color-border-strong);
+  --surface-muted: rgba(255, 255, 255, 0.045);
+}
+
+html {
+  color-scheme: dark;
 }
 
 * {
@@ -31,6 +46,7 @@ body {
   font-size: 1rem;
   color: var(--color-text);
   background: var(--color-bg);
+  background-image: radial-gradient(ellipse 120% 80% at 50% -30%, rgba(110, 180, 216, 0.06), transparent 55%);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -41,7 +57,7 @@ body {
   padding: 0.875rem 1.25rem;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-sm), var(--shadow-inset-highlight);
 }
 
 .site-header-brand {
@@ -56,6 +72,8 @@ body {
 .site-header strong {
   font-size: 1.05rem;
   letter-spacing: -0.02em;
+  color: var(--color-text);
+  font-weight: 650;
 }
 
 .site-nav {
@@ -75,7 +93,7 @@ body {
 
 .site-nav__link:hover {
   text-decoration: none;
-  border-bottom-color: rgba(11, 87, 208, 0.35);
+  border-bottom-color: rgba(110, 180, 216, 0.45);
 }
 
 .site-nav__link--active {
@@ -149,9 +167,10 @@ textarea.topic-input {
   max-width: 100%;
   padding: 0.65rem 0.75rem;
   font-size: 1rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius);
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
   font-family: inherit;
 }
 
@@ -163,8 +182,9 @@ textarea.topic-input {
 
 input[type="text"]:focus,
 textarea.topic-input:focus {
-  outline: 2px solid rgba(11, 87, 208, 0.35);
+  outline: 2px solid rgba(110, 180, 216, 0.45);
   outline-offset: 1px;
+  border-color: rgba(110, 180, 216, 0.35);
 }
 
 .suggestions {
@@ -177,16 +197,18 @@ textarea.topic-input:focus {
 .suggestion-chip {
   padding: 0.35rem 0.65rem;
   font-size: 0.85rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: 999px;
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
   cursor: pointer;
-  color: var(--color-text);
+  color: var(--color-muted);
+  transition: border-color 0.12s ease, color 0.12s ease, background 0.12s ease;
 }
 
 .suggestion-chip:hover {
-  border-color: var(--color-link);
+  border-color: rgba(110, 180, 216, 0.4);
   color: var(--color-link);
+  background: rgba(110, 180, 216, 0.06);
 }
 
 .btn {
@@ -203,30 +225,47 @@ textarea.topic-input:focus {
   font-family: inherit;
   text-decoration: none;
   line-height: 1.2;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.btn:focus-visible {
+  outline: 2px solid rgba(110, 180, 216, 0.55);
+  outline-offset: 2px;
 }
 
 .btn:disabled {
-  opacity: 0.55;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .btn-primary {
   background: var(--color-link);
-  color: #fff;
+  color: #0c0e11;
+  box-shadow: var(--shadow-sm), var(--shadow-inset-highlight);
 }
 
 .btn-primary:hover:not(:disabled) {
-  filter: brightness(1.06);
+  background: var(--color-link-hover);
+}
+
+.btn-primary:active:not(:disabled) {
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .btn-secondary {
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
   color: var(--color-text);
-  border-color: var(--color-border);
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-inset-highlight);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #f0f0f0;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(110, 180, 216, 0.25);
+}
+
+.btn-secondary:active:not(:disabled) {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .btn-ghost {
@@ -236,7 +275,13 @@ textarea.topic-input:focus {
 }
 
 .btn-ghost:hover:not(:disabled) {
-  text-decoration: underline;
+  text-decoration: none;
+  background: rgba(110, 180, 216, 0.08);
+  color: var(--color-link-hover);
+}
+
+.btn-ghost:active:not(:disabled) {
+  background: rgba(110, 180, 216, 0.12);
 }
 
 .btn-row {
@@ -251,18 +296,19 @@ textarea.topic-input:focus {
   color: var(--color-error);
   margin-top: 0.75rem;
   padding: 0.65rem 0.75rem;
-  background: #fff5f5;
+  background: rgba(220, 100, 100, 0.1);
   border-radius: var(--radius);
-  border: 1px solid #ffcdd2;
+  border: 1px solid rgba(220, 120, 120, 0.35);
   font-size: 0.92rem;
 }
 
 .empty-state {
   padding: 2rem 1rem;
   text-align: center;
-  border: 1px dashed var(--color-border);
+  border: 1px dashed var(--color-border-strong);
   border-radius: var(--radius);
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-inset-highlight);
 }
 
 .empty-state p {
@@ -326,8 +372,8 @@ textarea.topic-input:focus {
 }
 
 .status-badge--wait {
-  background: #f0f0f0;
-  color: #424242;
+  background: var(--color-wait-bg);
+  color: var(--color-wait-text);
 }
 
 .job-meta {
@@ -344,15 +390,16 @@ textarea.topic-input:focus {
   padding: 0.15rem 0.5rem;
   border: 1px solid var(--color-border);
   border-radius: 999px;
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
 }
 
 .source-table-wrap {
   overflow-x: auto;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius);
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
   margin-top: 0.5rem;
+  box-shadow: var(--shadow-inset-highlight);
 }
 
 .source-table {
@@ -374,7 +421,7 @@ textarea.topic-input:focus {
 }
 
 .source-table th {
-  background: #fafafa;
+  background: rgba(255, 255, 255, 0.03);
   font-weight: 600;
   font-size: 0.8rem;
   text-transform: uppercase;
@@ -417,12 +464,12 @@ textarea.topic-input:focus {
 }
 
 .report-md {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius);
   padding: 1.25rem 1.35rem;
   margin-top: 0.75rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-sm), var(--shadow-inset-highlight);
 }
 
 .report-md h1 {
@@ -487,15 +534,16 @@ textarea.topic-input:focus {
   padding: 0.85rem 1rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
   text-decoration: none;
   color: inherit;
-  box-shadow: var(--shadow-sm);
-  transition: border-color 0.15s ease;
+  box-shadow: var(--shadow-sm), var(--shadow-inset-highlight);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .history-card:hover {
-  border-color: #bdbdbd;
+  border-color: rgba(110, 180, 216, 0.32);
+  box-shadow: var(--shadow-raised), var(--shadow-inset-highlight);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -526,7 +574,7 @@ textarea.topic-input:focus {
 
 code {
   font-size: 0.88em;
-  background: #eee;
+  background: rgba(255, 255, 255, 0.07);
   padding: 0.1rem 0.3rem;
   border-radius: 4px;
 }
@@ -564,17 +612,18 @@ code {
 .gemini-select {
   padding: 0.45rem 0.55rem;
   font-size: 0.95rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius);
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
   font-family: inherit;
 }
 
 .gemini-error {
   margin-top: 0.75rem;
   padding: 0.55rem 0.65rem;
-  background: #fff8e1;
-  border: 1px solid #ffe082;
+  background: var(--color-warn-bg);
+  border: 1px solid rgba(210, 175, 95, 0.35);
   border-radius: var(--radius);
   color: var(--color-warn-text);
   font-size: 0.9rem;
@@ -595,13 +644,13 @@ code {
 }
 
 .job-hero {
-  background: linear-gradient(135deg, #f0f4ff 0%, #fafafa 100%);
-  border: 1px solid var(--color-border);
-  border-left: 4px solid var(--color-link);
+  background: linear-gradient(135deg, rgba(110, 180, 216, 0.08) 0%, var(--color-surface-raised) 55%, var(--color-surface) 100%);
+  border: 1px solid var(--color-border-strong);
+  border-left: 3px solid var(--color-link);
   border-radius: var(--radius);
   padding: 1.1rem 1.25rem;
   margin-bottom: 1.25rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-sm), var(--shadow-inset-highlight);
 }
 
 .job-hero__main {
@@ -638,11 +687,11 @@ code {
 }
 
 .source-card {
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   padding: 1rem 1.05rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-sm), var(--shadow-inset-highlight);
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -713,11 +762,11 @@ code {
 }
 
 .digest__bucket {
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   padding: 0.85rem 1rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-sm), var(--shadow-inset-highlight);
 }
 
 .digest__bucket-title {
@@ -825,11 +874,11 @@ code {
 }
 
 .product-surface {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius);
   padding: 1.35rem 1.4rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-sm), var(--shadow-inset-highlight);
   margin-top: 0.5rem;
 }
 
