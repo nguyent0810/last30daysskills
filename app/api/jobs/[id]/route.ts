@@ -19,6 +19,11 @@ function aiRecapConfigured(): boolean {
   return resolveThreadCompressionProvider().ok;
 }
 
+function aiRecapServerKind(): "hf" | "gemini" | undefined {
+  const p = resolveThreadCompressionProvider();
+  return p.ok ? p.kind : undefined;
+}
+
 function sameUser(a: string, b: string): boolean {
   return a.replace(/-/g, "").toLowerCase() === b.replace(/-/g, "").toLowerCase();
 }
@@ -145,6 +150,7 @@ export async function GET(
       items,
       geminiAvailable: geminiConfigured(),
       aiRecapConfigured: aiRecapConfigured(),
+      aiRecapServerKind: aiRecapServerKind(),
     });
   } catch (e) {
     return jsonFromRouteError(e, "[api/jobs/[id]]");

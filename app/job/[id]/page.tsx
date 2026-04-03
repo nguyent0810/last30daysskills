@@ -58,6 +58,8 @@ type JobPayload = {
   items?: DigestItem[];
   geminiAvailable?: boolean;
   aiRecapConfigured?: boolean;
+  /** Present when `aiRecapConfigured` is true; used for recap status copy only. */
+  aiRecapServerKind?: "hf" | "gemini";
 };
 
 const SOURCE_ORDER = ["hn", "polymarket", "reddit"] as const;
@@ -393,7 +395,7 @@ export default function JobPage() {
   const showDigest = terminal && j.status === "succeeded" && digestItems.length > 0;
 
   const running = j.status === "queued" || j.status === "running";
-  const canRunRecap = j.status === "succeeded" && reportTrim && Boolean(data.aiRecapConfigured);
+  const showRunRecapSection = j.status === "succeeded" && reportTrim;
   const heroRunning = runningHeroLines(j.topic);
   const heroTopItems =
     digestItems.length > 0
@@ -675,7 +677,12 @@ export default function JobPage() {
             </p>
           ) : null}
         </div>
-        <RunRecapPanel jobId={id} enabled={canRunRecap} />
+        <RunRecapPanel
+          jobId={id}
+          enabled={showRunRecapSection}
+          serverAiRecapConfigured={Boolean(data.aiRecapConfigured)}
+          serverKind={data.aiRecapServerKind}
+        />
         {copyMsg && <p className="copy-toast">{copyMsg}</p>}
         {!thread && rerunError ? <p className="error" style={{ marginTop: "0.35rem" }}>{rerunError}</p> : null}
         {data.report && reportPreview?.hasMore && !reportExpanded ? (

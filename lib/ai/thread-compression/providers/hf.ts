@@ -1,21 +1,16 @@
 import type { CompressionResult } from "../types";
 
 const REQUEST_TIMEOUT_MS = 20_000;
-const HF_URL = (model: string) =>
-  `https://api-inference.huggingface.co/models/${encodeURIComponent(model)}`;
+/** Inference Providers (replaces deprecated api-inference.huggingface.co). */
+const HF_CHAT_COMPLETIONS_URL = "https://router.huggingface.co/v1/chat/completions";
 
-function parseHfOutput(data: unknown): string | null {
-  if (typeof data === "string") return data.trim() || null;
-  if (Array.isArray(data) && data.length > 0) {
-    const first = data[0] as { generated_text?: string; summary_text?: string };
-    const t = first.generated_text ?? first.summary_text;
-    if (typeof t === "string" && t.trim()) return t.trim();
-  }
-  if (data && typeof data === "object") {
-    const o = data as { generated_text?: string; summary_text?: string; [k: string]: unknown };
-    if (typeof o.generated_text === "string" && o.generated_text.trim()) return o.generated_text.trim();
-    if (typeof o.summary_text === "string" && o.summary_text.trim()) return o.summary_text.trim();
-  }
+function parseHfChatOutput(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  const o = data as {
+    choices?: Array<{ message?: { content?: string | null } }>;
+  };
+  const c = o.choices?.[0]?.message?.content;
+  if (typeof c === "string" && c.trim()) return c.trim();
   return null;
 }
 
@@ -26,12 +21,11 @@ export async function callHfThreadCompression(
   model: string,
   fetchImpl: typeof fetch = globalThis.fetch
 ): Promise<CompressionResult> {
-  const inputs = `${system}\n\n${user}`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const res = await fetchImpl(HF_URL(model), {
+    const res = await fetchImpl(HF_CHAT_COMPLETIONS_URL, {
       method: "POST",
       signal: controller.signal,
       headers: {
@@ -39,11 +33,13 @@ export async function callHfThreadCompression(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        inputs,
-        parameters: {
-          max_new_tokens: 320,
-          return_full_text: false,
-        },
+        model,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+        max_tokens: 320,
+        temperature: 0.25,
       }),
     });
 
@@ -56,10 +52,12 @@ export async function callHfThreadCompression(
     }
 
     if (!res.ok) {
-      const errMsg =
-        data && typeof data === "object" && "error" in data
-          ? String((data as { error: unknown }).error)
-          : rawText.slice(0, 200);
+      let errMsg = rawText.slice(0, 200);
+      if (data && typeof data === "object") {
+        const top = data as { error?: unknown; message?: string };
+        if (typeof top.message === "string") errMsg = top.message;
+        else if (top.error !== undefined) errMsg = String(top.error);
+      }
       return {
         ok: false,
         code: "HF_HTTP",
@@ -67,7 +65,7 @@ export async function callHfThreadCompression(
       };
     }
 
-    const text = parseHfOutput(data);
+    const text = parseHfChatOutput(data);
     if (!text) {
       return { ok: false, code: "HF_EMPTY", message: "No summary text returned from the model" };
     }

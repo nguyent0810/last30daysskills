@@ -29,3 +29,18 @@ export function resolveThreadCompressionProvider(): ResolvedThreadCompressionPro
 export function isThreadCompressionConfigured(): boolean {
   return resolveThreadCompressionProvider().ok;
 }
+
+const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+
+/**
+ * Per-request Gemini using a user-supplied API key (header). Not persisted server-side.
+ * Model id follows server `GEMINI_MODEL` when set, else the same default as `lib/ai/gemini-summary.ts`.
+ */
+export function resolveGeminiProviderFromUserKey(
+  apiKey: string
+): Extract<ResolvedThreadCompressionProvider, { ok: true }> | null {
+  const trimmed = apiKey.trim();
+  if (!trimmed) return null;
+  const model = process.env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
+  return { ok: true, kind: "gemini", apiKey: trimmed, model };
+}

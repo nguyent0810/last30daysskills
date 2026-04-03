@@ -1,27 +1,61 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const GEMINI_BYOK_STORAGE_KEY = "crm_ai_recap_gemini_api_key";
 
 export function RunRecapPanel({
   jobId,
   enabled,
+  serverAiRecapConfigured,
+  serverKind,
 }: {
   jobId: string;
   enabled: boolean;
+  serverAiRecapConfigured: boolean;
+  serverKind?: "hf" | "gemini";
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [text, setText] = useState<string | null>(null);
   const [copyMsg, setCopyMsg] = useState<string | null>(null);
 
+  const [draftKey, setDraftKey] = useState("");
+  const [savedKey, setSavedKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(GEMINI_BYOK_STORAGE_KEY);
+      setSavedKey(v && v.trim() ? v : null);
+    } catch {
+      setSavedKey(null);
+    }
+  }, []);
+
+  const canGenerateRecap = serverAiRecapConfigured || Boolean(savedKey?.trim());
+
+  const recapSourceLabel = (() => {
+    if (savedKey?.trim()) return "Your Gemini key";
+    if (serverAiRecapConfigured) {
+      return serverKind === "gemini" ? "Server default (Gemini)" : "Server default (Hugging Face)";
+    }
+    return "Not configured (needs server AI or a saved Gemini key)";
+  })();
+
   async function generate() {
     setLoading(true);
     setError(null);
     setCopyMsg(null);
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      const k = savedKey?.trim();
+      if (k) headers["X-Gemini-API-Key"] = k;
+
       const res = await fetch(`/api/jobs/${jobId}/ai-recap`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         credentials: "include",
         body: JSON.stringify({}),
       });
@@ -67,6 +101,32 @@ export function RunRecapPanel({
     }
   }
 
+  function saveGeminiLocally() {
+    const t = draftKey.trim();
+    try {
+      if (t) {
+        localStorage.setItem(GEMINI_BYOK_STORAGE_KEY, t);
+        setSavedKey(t);
+      } else {
+        localStorage.removeItem(GEMINI_BYOK_STORAGE_KEY);
+        setSavedKey(null);
+      }
+    } catch {
+      /* ignore quota / private mode */
+    }
+    setDraftKey("");
+  }
+
+  function clearGeminiLocally() {
+    try {
+      localStorage.removeItem(GEMINI_BYOK_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    setSavedKey(null);
+    setDraftKey("");
+  }
+
   if (!enabled) return null;
 
   return (
@@ -74,9 +134,42 @@ export function RunRecapPanel({
       <h2 className="section-title">Optional AI recap (this run)</h2>
       <p className="section-hint muted">Optional short recap from this run’s report. Not saved.</p>
 
+      <div className="run-recap-byok" style={{ marginTop: "0.65rem" }}>
+        <label className="muted" style={{ fontSize: "0.85rem", display: "block", marginBottom: "0.35rem" }}>
+          Optional Gemini API key
+        </label>
+        <input
+          type="password"
+          className="topic-input"
+          style={{ maxWidth: "min(28rem, 100%)", fontSize: "0.9rem" }}
+          autoComplete="off"
+          spellCheck={false}
+          placeholder={savedKey ? "•••••••• (saved)" : "Paste key to use Gemini for this device only"}
+          value={draftKey}
+          onChange={(e) => setDraftKey(e.target.value)}
+        />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.45rem", alignItems: "center" }}>
+          <button type="button" className="btn btn-secondary btn--sm" onClick={saveGeminiLocally}>
+            Save locally
+          </button>
+          <button type="button" className="btn btn-ghost btn--sm" onClick={clearGeminiLocally}>
+            Clear
+          </button>
+        </div>
+        <p className="muted" style={{ fontSize: "0.8rem", marginTop: "0.45rem", marginBottom: 0 }}>
+          Recap will use: <strong>{recapSourceLabel}</strong>
+        </p>
+      </div>
+
       <div className="gemini-controls" style={{ marginTop: "0.75rem" }}>
         <div className="gemini-field gemini-field--action">
-          <button type="button" className="btn btn-secondary" disabled={loading} onClick={() => void generate()}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            disabled={loading || !canGenerateRecap}
+            title={!canGenerateRecap ? "Configure server AI or save a Gemini key above" : undefined}
+            onClick={() => void generate()}
+          >
             {loading ? "Generating…" : "Generate recap"}
           </button>
         </div>
@@ -117,4 +210,3 @@ export function RunRecapPanel({
     </section>
   );
 }
-

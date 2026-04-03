@@ -5,7 +5,10 @@ import { getAnonymousUserIdIfPresent } from "@/lib/auth/anonymous";
 import { getDb } from "@/lib/db";
 import { reports, researchItems, researchJobs, researches } from "@/lib/db/schema";
 import { toReportModeApi } from "@/lib/report-mode";
-import { resolveThreadCompressionProvider } from "@/lib/ai/thread-compression/select";
+import {
+  resolveGeminiProviderFromUserKey,
+  resolveThreadCompressionProvider,
+} from "@/lib/ai/thread-compression/select";
 import { runThreadCompression } from "@/lib/ai/thread-compression/run";
 import { buildRunRecapContext } from "@/lib/ai/run-recap/build-context";
 import { buildRunRecapPrompts } from "@/lib/ai/run-recap/prompt";
@@ -29,7 +32,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
     // Accept empty/missing body; spec sends `{}`.
   }
 
-  const provider = resolveThreadCompressionProvider();
+  const geminiHeader = request.headers.get("x-gemini-api-key")?.trim() ?? "";
+  const fromUserGemini = geminiHeader ? resolveGeminiProviderFromUserKey(geminiHeader) : null;
+  const provider =
+    fromUserGemini ?? resolveThreadCompressionProvider();
   if (!provider.ok) {
     return NextResponse.json(
       { error: "AI recap not configured", code: "AI_NOT_CONFIGURED" },
