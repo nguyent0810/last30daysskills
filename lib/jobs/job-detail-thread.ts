@@ -10,6 +10,9 @@ export type JobDetailThreadPayload = {
   archivedAt?: string | null;
   /** Number of runs on this thread */
   runCount?: number;
+  isPinned?: boolean;
+  /** Short personal intent (API field `note`). */
+  note?: string | null;
 };
 
 /**
@@ -19,7 +22,15 @@ export type JobDetailThreadPayload = {
 export function resolveJobDetailThread(
   researchId: string | null,
   researchRow:
-    | { id: string; topic: string; displayTitle: string | null; userId: string; archivedAt?: Date | null }
+    | {
+        id: string;
+        topic: string;
+        displayTitle: string | null;
+        userId: string;
+        archivedAt?: Date | null;
+        isPinned?: boolean;
+        threadNote?: string | null;
+      }
     | null
     | undefined,
   sessionUserId: string
@@ -31,6 +42,8 @@ export function resolveJobDetailThread(
     id: researchRow.id,
     topic: researchRow.topic,
     displayTitle: researchRow.displayTitle ?? null,
+    isPinned: researchRow.isPinned ?? false,
+    note: researchRow.threadNote ?? null,
   };
 }
 

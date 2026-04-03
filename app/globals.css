@@ -1018,6 +1018,50 @@ code {
   line-height: 1.45;
 }
 
+/* Phase 3 — pin + thread note (workflow) */
+.thread-workflow {
+  margin-top: 1rem;
+  max-width: 42rem;
+}
+
+.thread-workflow__pin-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.thread-workflow__pinned-hint {
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: 0.68rem !important;
+  opacity: 0.75;
+}
+
+.thread-workflow-note__input {
+  min-height: 4.5rem;
+  resize: vertical;
+  max-width: 100%;
+}
+
+.thread-history-card--pinned {
+  border-color: rgba(110, 180, 216, 0.28);
+  box-shadow: var(--shadow-sm), inset 0 0 0 1px rgba(110, 180, 216, 0.08);
+}
+
+.thread-note-preview {
+  font-size: 0.82rem;
+  color: var(--color-muted);
+  margin: 0 0 0.4rem;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-style: italic;
+}
+
 /* Thread insight strip (Phase 2 — quiet, high-signal) */
 .thread-insight-strip {
   margin-top: 1rem;

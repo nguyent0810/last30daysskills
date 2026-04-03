@@ -39,7 +39,11 @@ function pgConfigFromUrl(raw: string): pg.ClientConfig {
   };
 }
 
-const files = ["0001_researches_display_title.sql", "0002_researches_archived_at.sql"];
+const files = [
+  "0001_researches_display_title.sql",
+  "0002_researches_archived_at.sql",
+  "0003_researches_pin_note.sql",
+];
 
 async function main() {
   const rawUrl = process.env.DATABASE_URL;
@@ -60,7 +64,7 @@ async function main() {
       console.log(`Applying drizzle/${f}...`);
       await client.query(sql);
     }
-    console.log("Done. Columns display_title and/or archived_at are present (IF NOT EXISTS).");
+    console.log("Done. Incremental columns applied (IF NOT EXISTS).");
   } finally {
     await client.end();
   }

@@ -49,6 +49,8 @@ type JobPayload = {
     displayTitle: string | null;
     archivedAt?: string | null;
     runCount?: number;
+    isPinned?: boolean;
+    note?: string | null;
   } | null;
   report: string | null;
   reportMode: ReportModeApi;
@@ -82,6 +84,7 @@ export default function JobPage() {
   const [threadRenameError, setThreadRenameError] = useState<string | null>(null);
   const [threadArchiveBusy, setThreadArchiveBusy] = useState(false);
   const [threadArchiveError, setThreadArchiveError] = useState<string | null>(null);
+  const [threadPinBusy, setThreadPinBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -175,6 +178,35 @@ export default function JobPage() {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+  }
+
+  async function toggleThreadPinFromRun() {
+    if (!data?.thread) return;
+    setThreadPinBusy(true);
+    setThreadArchiveError(null);
+    try {
+      const res = await fetch(`/api/research/${data.thread.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ pinned: !(data.thread.isPinned ?? false) }),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        let msg = text || res.statusText;
+        try {
+          const j = JSON.parse(text) as { error?: string };
+          if (j.error) msg = j.error;
+        } catch {
+          /* plain */
+        }
+        setThreadArchiveError(msg);
+        return;
+      }
+      await load();
+    } finally {
+      setThreadPinBusy(false);
+    }
   }
 
   async function archiveThreadFromRun() {
@@ -404,6 +436,14 @@ export default function JobPage() {
               <Link href={`/research/${thread.id}`} className="btn btn-secondary btn--sm">
                 Open thread
               </Link>
+              <button
+                type="button"
+                className="btn btn-ghost btn--sm"
+                disabled={threadPinBusy}
+                onClick={() => void toggleThreadPinFromRun()}
+              >
+                {threadPinBusy ? "…" : thread.isPinned ? "Unpin" : "Pin"}
+              </button>
               <motion.button
                 type="button"
                 className="btn btn-secondary btn--sm"

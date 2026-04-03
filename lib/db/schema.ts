@@ -1,4 +1,5 @@
 import {
+  boolean,
   index,
   pgTable,
   text,
@@ -27,6 +28,10 @@ export const researches = pgTable("researches", {
   displayTitle: text("display_title"),
   /** Soft-hide from default History; null = active. */
   archivedAt: timestamp("archived_at", { withTimezone: true }),
+  /** Pinned threads sort first in History. */
+  isPinned: boolean("is_pinned").notNull().default(false),
+  /** Short personal intent (“why this matters”); not markdown. */
+  threadNote: text("thread_note"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("researches_user_id_idx").on(table.userId)]);

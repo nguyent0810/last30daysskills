@@ -28,6 +28,8 @@ type ResearchRow = {
   topic: string;
   displayTitle?: string | null;
   updatedAt: string;
+  isPinned?: boolean;
+  note?: string | null;
   runCount?: number;
   newLinksSincePriorRun?: number | null;
   latestRun: LatestRun | null;
@@ -46,18 +48,52 @@ function HistoryThreadRow({
   index,
   archivedMode,
   onRemoveFromList,
+  onPinnedChanged,
 }: {
   r: ResearchRow;
   index: number;
   archivedMode: boolean;
   onRemoveFromList: (id: string) => void;
+  onPinnedChanged: () => void;
 }) {
   const router = useRouter();
   const [runBusy, setRunBusy] = useState(false);
   const [archiveBusy, setArchiveBusy] = useState(false);
+  const [pinBusy, setPinBusy] = useState(false);
   const [rowError, setRowError] = useState<string | null>(null);
   const label = r.displayTitle?.trim() || r.topic;
   const runCount = r.runCount ?? 0;
+  const pinned = Boolean(r.isPinned);
+
+  async function togglePin(e: MouseEvent<HTMLButtonElement>) {
+    e.preventDefault();
+    e.stopPropagation();
+    setRowError(null);
+    setPinBusy(true);
+    try {
+      const res = await fetch(`/api/research/${r.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ pinned: !pinned }),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        let msg = text || res.statusText;
+        try {
+          const j = JSON.parse(text) as { error?: string };
+          if (j.error) msg = j.error;
+        } catch {
+          /* plain */
+        }
+        setRowError(msg);
+        return;
+      }
+      onPinnedChanged();
+    } finally {
+      setPinBusy(false);
+    }
+  }
 
   async function runAgain(e: MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
@@ -130,9 +166,10 @@ function HistoryThreadRow({
       whileHover={{ y: -2 }}
       style={{ willChange: "transform" }}
     >
-      <div className="thread-history-card">
+      <div className={`thread-history-card${pinned ? " thread-history-card--pinned" : ""}`}>
         <Link href={`/research/${r.id}`} className="thread-history-card__main">
           <p className="thread-history-card__title">{label}</p>
+          {r.note?.trim() ? <p className="thread-note-preview">{r.note.trim()}</p> : null}
           {r.latestRun?.insightLine ? (
             <p className="thread-history-card__insight">{r.latestRun.insightLine}</p>
           ) : null}
@@ -173,6 +210,14 @@ function HistoryThreadRow({
           <Link href={`/research/${r.id}?rename=1`} className="btn btn-ghost btn--sm">
             Rename
           </Link>
+          <button
+            type="button"
+            className="btn btn-ghost btn--sm"
+            disabled={pinBusy}
+            onClick={(e) => void togglePin(e)}
+          >
+            {pinBusy ? "…" : pinned ? "Unpin" : "Pin"}
+          </button>
           {archivedMode ? (
             <button
               type="button"
@@ -209,9 +254,14 @@ function HistoryListBody() {
 
   const [researches, setResearches] = useState<ResearchRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [refetchNonce, setRefetchNonce] = useState(0);
 
   const removeThreadFromList = useCallback((tid: string) => {
     setResearches((prev) => (prev ? prev.filter((x) => x.id !== tid) : prev));
+  }, []);
+
+  const bumpRefetch = useCallback(() => {
+    setRefetchNonce((n) => n + 1);
   }, []);
 
   useEffect(() => {
@@ -237,7 +287,7 @@ function HistoryListBody() {
       const data = (await res.json()) as { researches: ResearchRow[] };
       setResearches(data.researches);
     })();
-  }, [archivedMode]);
+  }, [archivedMode, refetchNonce]);
 
   if (error) {
     return (
@@ -325,7 +375,7 @@ function HistoryListBody() {
       <p className="page-lead muted">
         {archivedMode
           ? "Archived threads, newest activity first. Open one to see its runs."
-          : "Threads with the latest activity first. Open a thread for its runs, or run again from a row."}
+          : "Pinned threads first, then by latest activity. Open a thread for its runs, or run again from a row."}
       </p>
       {!archivedMode ? (
         <p className="muted" style={{ marginTop: "0.15rem", fontSize: "0.88rem" }}>
@@ -340,6 +390,7 @@ function HistoryListBody() {
             index={index}
             archivedMode={archivedMode}
             onRemoveFromList={removeThreadFromList}
+            onPinnedChanged={bumpRefetch}
           />
         ))}
       </ul>

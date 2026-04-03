@@ -79,6 +79,8 @@ export async function GET(
       displayTitle: string | null;
       userId: string;
       archivedAt: Date | null;
+      isPinned: boolean;
+      threadNote: string | null;
     } | null = null;
     if (job.researchId != null) {
       const [r] = await db
@@ -88,6 +90,8 @@ export async function GET(
           displayTitle: researches.displayTitle,
           userId: researches.userId,
           archivedAt: researches.archivedAt,
+          isPinned: researches.isPinned,
+          threadNote: researches.threadNote,
         })
         .from(researches)
         .where(eq(researches.id, job.researchId))
@@ -99,6 +103,8 @@ export async function GET(
             displayTitle: r.displayTitle ?? null,
             userId: r.userId,
             archivedAt: r.archivedAt ?? null,
+            isPinned: r.isPinned,
+            threadNote: r.threadNote ?? null,
           }
         : null;
     }

@@ -21,6 +21,19 @@ function sameUser(a: string, b: string): boolean {
   return a.replace(/-/g, "").toLowerCase() === b.replace(/-/g, "").toLowerCase();
 }
 
+function researchJson(research: typeof researches.$inferSelect) {
+  return {
+    id: research.id,
+    topic: research.topic,
+    displayTitle: research.displayTitle ?? null,
+    archivedAt: research.archivedAt ? research.archivedAt.toISOString() : null,
+    isPinned: Boolean(research.isPinned),
+    note: research.threadNote ?? null,
+    createdAt: research.createdAt.toISOString(),
+    updatedAt: research.updatedAt.toISOString(),
+  };
+}
+
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
   const id = params.id;
   if (!id) {
@@ -143,14 +156,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     }
 
     return NextResponse.json({
-      research: {
-        id: research.id,
-        topic: research.topic,
-        displayTitle: research.displayTitle ?? null,
-        archivedAt: research.archivedAt ? research.archivedAt.toISOString() : null,
-        createdAt: research.createdAt,
-        updatedAt: research.updatedAt,
-      },
+      research: researchJson(research),
       runs,
       sincePreviousRun,
       threadInsight,
@@ -178,6 +184,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
+  const { updates } = parsed;
+
   try {
     const userId = await getAnonymousUserIdIfPresent();
     if (!userId) {
@@ -195,34 +203,21 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    if (parsed.op.kind === "displayTitle") {
-      await db
-        .update(researches)
-        .set({ displayTitle: parsed.op.displayTitle })
-        .where(eq(researches.id, id));
-    } else if (parsed.op.archived) {
-      await db
-        .update(researches)
-        .set({ archivedAt: new Date() })
-        .where(and(eq(researches.id, id), isNull(researches.archivedAt)));
-    } else {
-      await db.update(researches).set({ archivedAt: null }).where(eq(researches.id, id));
-    }
+    await db
+      .update(researches)
+      .set({
+        updatedAt: new Date(),
+        ...(updates.displayTitle !== undefined ? { displayTitle: updates.displayTitle } : {}),
+        ...(updates.pinned !== undefined ? { isPinned: updates.pinned } : {}),
+        ...(updates.note !== undefined ? { threadNote: updates.note } : {}),
+        ...(updates.archived === false ? { archivedAt: null } : {}),
+        ...(updates.archived === true && research.archivedAt == null ? { archivedAt: new Date() } : {}),
+      })
+      .where(eq(researches.id, id));
 
     const [updated] = await db.select().from(researches).where(eq(researches.id, id)).limit(1);
 
-    if (parsed.op.kind === "displayTitle") {
-      return NextResponse.json({
-        id: updated!.id,
-        topic: updated!.topic,
-        displayTitle: updated!.displayTitle ?? null,
-      });
-    }
-
-    return NextResponse.json({
-      id: updated!.id,
-      archivedAt: updated!.archivedAt ? updated!.archivedAt.toISOString() : null,
-    });
+    return NextResponse.json(researchJson(updated!));
   } catch (e) {
     return jsonFromRouteError(e, "[api/research/[id] PATCH]");
   }

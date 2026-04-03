@@ -25,6 +25,8 @@ describe("resolveJobDetailThread", () => {
       id: researchRow.id,
       topic: "canonical topic",
       displayTitle: null,
+      isPinned: false,
+      note: null,
     });
   });
 

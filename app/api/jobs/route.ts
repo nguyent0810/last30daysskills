@@ -83,7 +83,7 @@ export async function GET(request: Request) {
       .select()
       .from(researches)
       .where(and(eq(researches.userId, userId), archiveClause))
-      .orderBy(desc(researches.updatedAt))
+      .orderBy(desc(researches.isPinned), desc(researches.updatedAt))
       .limit(50);
 
     if (researchList.length === 0) {
@@ -208,6 +208,8 @@ export async function GET(request: Request) {
         topic: r.topic,
         displayTitle: r.displayTitle ?? null,
         updatedAt: r.updatedAt,
+        isPinned: Boolean(r.isPinned),
+        note: r.threadNote ?? null,
         runCount: runCountByResearch.get(r.id) ?? 0,
         newLinksSincePriorRun,
         latestRun: jr

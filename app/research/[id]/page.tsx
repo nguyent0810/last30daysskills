@@ -31,6 +31,8 @@ type Payload = {
     topic: string;
     displayTitle?: string | null;
     archivedAt?: string | null;
+    isPinned: boolean;
+    note: string | null;
     createdAt: string;
     updatedAt: string;
   };
@@ -88,6 +90,10 @@ function ResearchPageBody() {
   const [renameError, setRenameError] = useState<string | null>(null);
   const [archiveBusy, setArchiveBusy] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [pinBusy, setPinBusy] = useState(false);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [noteBusy, setNoteBusy] = useState(false);
+  const [metaError, setMetaError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -110,13 +116,78 @@ function ResearchPageBody() {
       setError(msg);
       return;
     }
-    setData((await res.json()) as Payload);
+    const payload = (await res.json()) as Payload;
+    setData(payload);
+    setNoteDraft(payload.research.note ?? "");
     setError(null);
     setRerunError(null);
     setRenameOpen(false);
     setRenameError(null);
     setArchiveError(null);
+    setMetaError(null);
   }, [id]);
+
+  async function togglePin() {
+    if (!id || !data) return;
+    setPinBusy(true);
+    setMetaError(null);
+    try {
+      const res = await fetch(`/api/research/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ pinned: !data.research.isPinned }),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        let msg = text || res.statusText;
+        try {
+          const j = JSON.parse(text) as { error?: string };
+          if (j.error) msg = j.error;
+        } catch {
+          /* plain */
+        }
+        setMetaError(msg);
+        return;
+      }
+      const j = JSON.parse(text) as Payload["research"];
+      setData((prev) => (prev ? { ...prev, research: j } : prev));
+    } finally {
+      setPinBusy(false);
+    }
+  }
+
+  async function saveNote() {
+    if (!id) return;
+    const trimmed = noteDraft.trim();
+    setNoteBusy(true);
+    setMetaError(null);
+    try {
+      const res = await fetch(`/api/research/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ note: trimmed.length ? trimmed : null }),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        let msg = text || res.statusText;
+        try {
+          const j = JSON.parse(text) as { error?: string };
+          if (j.error) msg = j.error;
+        } catch {
+          /* plain */
+        }
+        setMetaError(msg);
+        return;
+      }
+      const j = JSON.parse(text) as Payload["research"];
+      setData((prev) => (prev ? { ...prev, research: j } : prev));
+      setNoteDraft(j.note ?? "");
+    } finally {
+      setNoteBusy(false);
+    }
+  }
 
   async function setArchived(archived: boolean) {
     if (!id) return;
@@ -141,15 +212,8 @@ function ResearchPageBody() {
         setArchiveError(msg);
         return;
       }
-      const j = JSON.parse(text) as { archivedAt: string | null };
-      setData((prev) =>
-        prev
-          ? {
-              ...prev,
-              research: { ...prev.research, archivedAt: j.archivedAt },
-            }
-          : prev
-      );
+      const j = JSON.parse(text) as Payload["research"];
+      setData((prev) => (prev ? { ...prev, research: j } : prev));
     } finally {
       setArchiveBusy(false);
     }
@@ -195,15 +259,8 @@ function ResearchPageBody() {
         setRenameError(msg);
         return;
       }
-      const j = JSON.parse(text) as { displayTitle: string | null };
-      setData((prev) =>
-        prev
-          ? {
-              ...prev,
-              research: { ...prev.research, displayTitle: j.displayTitle },
-            }
-          : prev
-      );
+      const j = JSON.parse(text) as Payload["research"];
+      setData((prev) => (prev ? { ...prev, research: j } : prev));
       setRenameOpen(false);
     } finally {
       setRenameBusy(false);
@@ -233,15 +290,8 @@ function ResearchPageBody() {
         setRenameError(msg);
         return;
       }
-      const j = JSON.parse(text) as { displayTitle: string | null };
-      setData((prev) =>
-        prev
-          ? {
-              ...prev,
-              research: { ...prev.research, displayTitle: j.displayTitle },
-            }
-          : prev
-      );
+      const j = JSON.parse(text) as Payload["research"];
+      setData((prev) => (prev ? { ...prev, research: j } : prev));
       setRenameOpen(false);
     } finally {
       setRenameBusy(false);
@@ -403,6 +453,49 @@ function ResearchPageBody() {
           </div>
         </div>
       ) : null}
+
+      <div className="thread-workflow">
+        <div className="thread-workflow__pin-row">
+          <button
+            type="button"
+            className="btn btn-ghost btn--sm"
+            disabled={pinBusy}
+            onClick={() => void togglePin()}
+            aria-pressed={r.isPinned}
+          >
+            {pinBusy ? "Updating…" : r.isPinned ? "Unpin from History" : "Pin to top of History"}
+          </button>
+          {r.isPinned ? (
+            <span className="thread-workflow__pinned-hint muted" style={{ fontSize: "0.8rem" }}>
+              Pinned
+            </span>
+          ) : null}
+        </div>
+        <div className="thread-workflow-note">
+          <label htmlFor="thread-why-note" className="muted" style={{ display: "block", fontSize: "0.88rem", marginBottom: "0.35rem" }}>
+            Why this matters
+          </label>
+          <textarea
+            id="thread-why-note"
+            className="topic-input thread-workflow-note__input"
+            rows={3}
+            maxLength={500}
+            placeholder="Short reminder: what you’re watching for, or why you’ll revisit."
+            value={noteDraft}
+            disabled={noteBusy}
+            onChange={(e) => setNoteDraft(e.target.value)}
+          />
+          <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.78rem" }}>
+            {noteDraft.length}/500
+          </p>
+          <div style={{ marginTop: "0.5rem" }}>
+            <button type="button" className="btn btn-secondary btn--sm" disabled={noteBusy} onClick={() => void saveNote()}>
+              {noteBusy ? "Saving…" : "Save note"}
+            </button>
+          </div>
+        </div>
+        {metaError ? <p className="error" style={{ marginTop: "0.5rem", fontSize: "0.88rem" }}>{metaError}</p> : null}
+      </div>
 
       <div style={{ marginTop: "1rem" }}>
         <button
