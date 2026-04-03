@@ -1132,12 +1132,12 @@ code {
 }
 
 .home-layout {
-  max-width: 72rem;
-  margin: 0 auto;
+  max-width: none;
 }
 
 .home-hero-strip {
-  margin-bottom: 1rem;
+  max-width: 74rem;
+  margin: 0 auto 1rem;
 }
 
 .home-hero-strip__copy {
@@ -1147,8 +1147,10 @@ code {
 .home-workspace {
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
-  gap: 1.15rem;
+  gap: 1.35rem;
   align-items: start;
+  max-width: 82rem;
+  margin: 0 auto;
 }
 
 .home-workspace__heading {
@@ -1185,7 +1187,8 @@ code {
 }
 
 @media (max-width: 940px) {
-  .home-layout {
+  .home-hero-strip,
+  .home-workspace {
     max-width: none;
   }
 
