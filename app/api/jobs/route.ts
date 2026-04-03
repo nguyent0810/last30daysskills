@@ -11,6 +11,7 @@ import { createResearchRun } from "@/lib/jobs/create-research-run";
 import { toReportModeApi } from "@/lib/report-mode";
 
 export const dynamic = "force-dynamic";
+const HISTORY_LIMIT = 50;
 
 const postBodySchema = z
   .object({
@@ -84,10 +85,14 @@ export async function GET(request: Request) {
       .from(researches)
       .where(and(eq(researches.userId, userId), archiveClause))
       .orderBy(desc(researches.isPinned), desc(researches.updatedAt))
-      .limit(50);
+      .limit(HISTORY_LIMIT);
 
     if (researchList.length === 0) {
-      const empty = NextResponse.json({ researches: [] });
+      const empty = NextResponse.json({
+        researches: [],
+        limit: HISTORY_LIMIT,
+        returnedCount: 0,
+      });
       if (setCookieHeader) {
         empty.headers.append("Set-Cookie", setCookieHeader);
       }
@@ -224,7 +229,11 @@ export async function GET(request: Request) {
       };
     });
 
-    const res = NextResponse.json({ researches: researchesPayload });
+    const res = NextResponse.json({
+      researches: researchesPayload,
+      limit: HISTORY_LIMIT,
+      returnedCount: researchesPayload.length,
+    });
     if (setCookieHeader) {
       res.headers.append("Set-Cookie", setCookieHeader);
     }

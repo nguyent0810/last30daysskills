@@ -253,6 +253,8 @@ function HistoryListBody() {
   const archivedMode = isHistoryArchivedView(searchParams);
 
   const [researches, setResearches] = useState<ResearchRow[] | null>(null);
+  const [historyLimit, setHistoryLimit] = useState<number | null>(null);
+  const [returnedCount, setReturnedCount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refetchNonce, setRefetchNonce] = useState(0);
 
@@ -266,6 +268,8 @@ function HistoryListBody() {
 
   useEffect(() => {
     setResearches(null);
+    setHistoryLimit(null);
+    setReturnedCount(null);
     setError(null);
     const url = historyJobsListUrl(archivedMode);
     void (async () => {
@@ -284,10 +288,18 @@ function HistoryListBody() {
         setError(msg);
         return;
       }
-      const data = (await res.json()) as { researches: ResearchRow[] };
+      const data = (await res.json()) as {
+        researches: ResearchRow[];
+        limit?: number;
+        returnedCount?: number;
+      };
       setResearches(data.researches);
+      setHistoryLimit(typeof data.limit === "number" ? data.limit : null);
+      setReturnedCount(typeof data.returnedCount === "number" ? data.returnedCount : data.researches.length);
     })();
   }, [archivedMode, refetchNonce]);
+
+  const isCapped = historyLimit != null && returnedCount != null && returnedCount === historyLimit;
 
   if (error) {
     return (
@@ -377,6 +389,11 @@ function HistoryListBody() {
           ? "Archived threads, newest activity first. Open one to see its runs."
           : "Pinned threads first, then by latest activity. Open a thread for its runs, or run again from a row."}
       </p>
+      {isCapped ? (
+        <p className="muted" style={{ marginTop: "0.25rem", fontSize: "0.88rem" }}>
+          Showing latest {historyLimit} threads.
+        </p>
+      ) : null}
       {!archivedMode ? (
         <p className="muted" style={{ marginTop: "0.15rem", fontSize: "0.88rem" }}>
           <Link href={historyArchivedListPath()}>Archived threads</Link>

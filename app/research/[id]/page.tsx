@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { motion } from "motion/react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { buildThreadBriefText } from "@/lib/research/format-thread-brief";
 import { DURATION_FAST_S, SHELL_EASE, shellTransitionMedium, staggerDelay } from "@/lib/motion/shell";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { ReportModeApi } from "@/lib/report-mode";
@@ -94,6 +95,7 @@ function ResearchPageBody() {
   const [noteDraft, setNoteDraft] = useState("");
   const [noteBusy, setNoteBusy] = useState(false);
   const [metaError, setMetaError] = useState<string | null>(null);
+  const [briefCopyMsg, setBriefCopyMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -302,6 +304,29 @@ function ResearchPageBody() {
     void load();
   }, [load]);
 
+  const briefText = useMemo(() => {
+    if (!data) return "";
+    return buildThreadBriefText({
+      displayTitle: data.research.displayTitle,
+      topic: data.research.topic,
+      note: data.research.note,
+      threadInsight: data.threadInsight ?? null,
+      runs: data.runs,
+    });
+  }, [data]);
+
+  async function copyBrief() {
+    if (!briefText) return;
+    try {
+      await navigator.clipboard.writeText(briefText);
+      setBriefCopyMsg("Copied");
+      setTimeout(() => setBriefCopyMsg(null), 2000);
+    } catch {
+      setBriefCopyMsg("Could not copy — select text manually");
+      setTimeout(() => setBriefCopyMsg(null), 3000);
+    }
+  }
+
   useEffect(() => {
     if (searchParams.get("rename") !== "1" || !data || !id) return;
     setRenameDraft(data.research.displayTitle ?? "");
@@ -495,6 +520,23 @@ function ResearchPageBody() {
           </div>
         </div>
         {metaError ? <p className="error" style={{ marginTop: "0.5rem", fontSize: "0.88rem" }}>{metaError}</p> : null}
+      </div>
+
+      <div className="thread-brief">
+        <div className="thread-brief__head">
+          <h2 className="thread-brief__heading">Thread brief</h2>
+          <button type="button" className="btn btn-secondary btn--sm" onClick={() => void copyBrief()}>
+            {briefCopyMsg === "Copied" ? "Copied" : "Copy brief"}
+          </button>
+        </div>
+        <p className="thread-brief__hint muted">Paste into notes, Slack, or a doc—everything below is copied.</p>
+        <pre className="thread-brief__preview">{briefText}</pre>
+        {briefCopyMsg === "Copied" ? <p className="copy-toast">{briefCopyMsg}</p> : null}
+        {briefCopyMsg && briefCopyMsg !== "Copied" ? (
+          <p className="error" role="alert" style={{ marginTop: "0.45rem", fontSize: "0.85rem" }}>
+            {briefCopyMsg}
+          </p>
+        ) : null}
       </div>
 
       <div style={{ marginTop: "1rem" }}>

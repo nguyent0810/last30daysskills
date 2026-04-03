@@ -17,9 +17,12 @@ export default function HomePage() {
   const [topic, setTopic] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const trimmedTopic = topic.trim();
+  const canSubmit = trimmedTopic.length > 0 && !loading;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!trimmedTopic) return;
     setError(null);
     setLoading(true);
     try {
@@ -27,7 +30,7 @@ export default function HomePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ topic: topic.trim() || "news" }),
+        body: JSON.stringify({ topic: trimmedTopic }),
       });
       if (!res.ok) {
         const t = await res.text();
@@ -82,6 +85,11 @@ export default function HomePage() {
         <p className="muted" style={{ marginTop: "0.35rem", fontSize: "0.85rem" }}>
           {topic.length}/500 characters
         </p>
+        {!canSubmit && !loading ? (
+          <p className="muted" style={{ marginTop: "0.35rem", fontSize: "0.85rem" }}>
+            Type a topic to get started.
+          </p>
+        ) : null}
         <div className="suggestions" aria-label="Suggested topics">
           {SUGGESTIONS.map((s) => (
             <button
@@ -96,8 +104,8 @@ export default function HomePage() {
           ))}
         </div>
         <div className="form-row btn-row">
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Starting…" : "Start run"}
+          <button type="submit" className="btn btn-primary" disabled={!canSubmit}>
+            {loading ? "Starting…" : "Run research"}
           </button>
           <Link href="/history" className="btn btn-ghost">
             History
