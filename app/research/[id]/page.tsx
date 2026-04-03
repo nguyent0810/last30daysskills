@@ -16,6 +16,13 @@ type RunRow = {
   updatedAt: string;
   reportMode: ReportModeApi;
   insightLine?: string | null;
+  vsPreviousLine?: string | null;
+};
+
+type ThreadInsightPayload = {
+  summaryLine: string;
+  direction: "rising" | "flat" | "fading" | "sparse";
+  sourceDominance: "reddit" | "hacker_news" | "mixed" | "weak";
 };
 
 type Payload = {
@@ -29,7 +36,34 @@ type Payload = {
   };
   runs: RunRow[];
   sincePreviousRun?: { newLinkCount: number } | null;
+  threadInsight?: ThreadInsightPayload | null;
 };
+
+function directionPillLabel(d: ThreadInsightPayload["direction"]): string {
+  switch (d) {
+    case "rising":
+      return "Rising";
+    case "fading":
+      return "Fading";
+    case "sparse":
+      return "Sparse";
+    default:
+      return "Flat";
+  }
+}
+
+function dominancePillLabel(s: ThreadInsightPayload["sourceDominance"]): string {
+  switch (s) {
+    case "reddit":
+      return "Reddit-heavy";
+    case "hacker_news":
+      return "HN-heavy";
+    case "weak":
+      return "Weak signal";
+    default:
+      return "Mixed";
+  }
+}
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -353,6 +387,23 @@ function ResearchPageBody() {
         </p>
       </motion.header>
 
+      {data.threadInsight ? (
+        <div className="thread-insight-strip">
+          <p className="thread-insight-strip__summary">{data.threadInsight.summaryLine}</p>
+          {data.sincePreviousRun ? (
+            <p className="thread-insight-strip__foot">
+              {data.sincePreviousRun.newLinkCount} new link{data.sincePreviousRun.newLinkCount === 1 ? "" : "s"} since the previous run.
+            </p>
+          ) : null}
+          <div className="thread-insight-strip__pills">
+            <span className="thread-insight-pill">{directionPillLabel(data.threadInsight.direction)}</span>
+            <span className="thread-insight-pill thread-insight-pill--muted">
+              {dominancePillLabel(data.threadInsight.sourceDominance)}
+            </span>
+          </div>
+        </div>
+      ) : null}
+
       <div style={{ marginTop: "1rem" }}>
         <button
           type="button"
@@ -408,12 +459,7 @@ function ResearchPageBody() {
         </div>
       ) : (
         <>
-          {data.sincePreviousRun ? (
-            <p className="section-hint muted" style={{ marginTop: "0.85rem", marginBottom: 0 }}>
-              {data.sincePreviousRun.newLinkCount} new links since last run
-            </p>
-          ) : null}
-          <p className="muted" style={{ marginTop: data.sincePreviousRun ? "0.35rem" : "0.85rem", fontSize: "0.88rem", maxWidth: "38rem" }}>
+          <p className="muted" style={{ marginTop: "0.85rem", fontSize: "0.88rem", maxWidth: "38rem" }}>
             Open a run below for its report and sources, or rename / archive this thread.
           </p>
           <div
@@ -496,6 +542,7 @@ function ResearchPageBody() {
                   ) : null}
                 </div>
                 {run.insightLine ? <p className="thread-run-insight">{run.insightLine}</p> : null}
+                {run.vsPreviousLine ? <p className="thread-run-vs-prev">vs prior run: {run.vsPreviousLine}</p> : null}
                 <span className="muted" style={{ fontSize: "0.82rem", marginTop: "0.35rem", display: "inline-block" }}>
                   Open run →
                 </span>

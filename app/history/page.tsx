@@ -29,6 +29,7 @@ type ResearchRow = {
   displayTitle?: string | null;
   updatedAt: string;
   runCount?: number;
+  newLinksSincePriorRun?: number | null;
   latestRun: LatestRun | null;
 };
 
@@ -150,6 +151,11 @@ function HistoryThreadRow({
                 No runs yet
               </span>
             )}
+            {r.newLinksSincePriorRun != null && r.newLinksSincePriorRun > 0 ? (
+              <span className="thread-history-card__retention">
+                {r.newLinksSincePriorRun} new link{r.newLinksSincePriorRun === 1 ? "" : "s"} since prior run
+              </span>
+            ) : null}
           </div>
         </Link>
         <div className="thread-history-card__actions">

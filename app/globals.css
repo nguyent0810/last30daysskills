@@ -1017,3 +1017,66 @@ code {
   margin: 0.15rem 0 0;
   line-height: 1.45;
 }
+
+/* Thread insight strip (Phase 2 — quiet, high-signal) */
+.thread-insight-strip {
+  margin-top: 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-sm), var(--shadow-inset-highlight);
+  max-width: 42rem;
+}
+
+.thread-insight-strip__summary {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.thread-insight-strip__foot {
+  margin: 0.45rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  line-height: 1.45;
+}
+
+.thread-insight-strip__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+}
+
+.thread-insight-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid rgba(110, 180, 216, 0.28);
+  color: var(--color-muted);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.thread-insight-pill--muted {
+  opacity: 0.88;
+  border-color: var(--color-border);
+}
+
+.thread-run-vs-prev {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  margin: 0.4rem 0 0;
+  line-height: 1.45;
+}
+
+.thread-history-card__retention {
+  font-size: 0.8rem;
+  color: rgba(144, 200, 220, 0.85);
+  width: 100%;
+}

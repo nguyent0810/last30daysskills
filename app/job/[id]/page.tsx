@@ -487,6 +487,11 @@ export default function JobPage() {
           )}
           {threadRenameError ? <p className="error" style={{ marginTop: "0.5rem", fontSize: "0.88rem" }}>{threadRenameError}</p> : null}
           {threadArchiveError ? <p className="error" style={{ marginTop: "0.5rem", fontSize: "0.88rem" }}>{threadArchiveError}</p> : null}
+          {rerunError ? (
+            <p className="error" role="alert" style={{ marginTop: "0.45rem", marginBottom: 0, fontSize: "0.86rem", lineHeight: 1.45 }}>
+              {rerunError}
+            </p>
+          ) : null}
         </div>
       ) : (
         <p className="thread-context-fallback">
@@ -609,7 +614,7 @@ export default function JobPage() {
           ) : null}
         </div>
         {copyMsg && <p className="copy-toast">{copyMsg}</p>}
-        {rerunError ? <p className="error" style={{ marginTop: "0.35rem" }}>{rerunError}</p> : null}
+        {!thread && rerunError ? <p className="error" style={{ marginTop: "0.35rem" }}>{rerunError}</p> : null}
         {data.report && reportPreview?.hasMore && !reportExpanded ? (
           <p className="section-hint muted report-section__hint">Showing the top findings first — expand for sources and the complete write-up.</p>
         ) : null}

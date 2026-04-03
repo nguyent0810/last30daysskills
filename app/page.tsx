@@ -97,7 +97,7 @@ export default function HomePage() {
         </div>
         <div className="form-row btn-row">
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Starting your run…" : "Run research"}
+            {loading ? "Starting…" : "Start run"}
           </button>
           <Link href="/history" className="btn btn-ghost">
             History

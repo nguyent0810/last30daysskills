@@ -4,8 +4,9 @@ import { and, count, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { jsonFromRouteError } from "@/lib/api/route-error-response";
 import { getOrCreateAnonymousUser } from "@/lib/auth/anonymous";
 import { getDb } from "@/lib/db";
-import { reports, researches, researchJobs } from "@/lib/db/schema";
+import { reports, researches, researchItems, researchJobs } from "@/lib/db/schema";
 import { insightLineFromReport } from "@/lib/job-page/run-insight-line";
+import { sincePreviousRunFromUrlLists } from "@/lib/research/new-links-since-previous";
 import { createResearchRun } from "@/lib/jobs/create-research-run";
 import { toReportModeApi } from "@/lib/report-mode";
 
@@ -144,6 +145,49 @@ export async function GET(request: Request) {
       }
     }
 
+    const secondLatestByResearch = new Map<string, { id: string }>();
+    for (const row of jobRows) {
+      if (!row.researchId) continue;
+      const first = latestByResearch.get(row.researchId);
+      if (!first || row.id === first.id) continue;
+      if (!secondLatestByResearch.has(row.researchId)) {
+        secondLatestByResearch.set(row.researchId, { id: row.id });
+      }
+    }
+
+    const pairJobIds: string[] = [];
+    for (const r of researchList) {
+      const j1 = latestByResearch.get(r.id);
+      const j2 = secondLatestByResearch.get(r.id);
+      if (j1 && j2) {
+        pairJobIds.push(j1.id, j2.id);
+      }
+    }
+
+    const itemRowsForPairs =
+      pairJobIds.length > 0
+        ? await db
+            .select({ jobId: researchItems.jobId, url: researchItems.url })
+            .from(researchItems)
+            .where(inArray(researchItems.jobId, pairJobIds))
+        : [];
+
+    const urlsByJobId = new Map<string, string[]>();
+    for (const row of itemRowsForPairs) {
+      const list = urlsByJobId.get(row.jobId) ?? [];
+      list.push(row.url);
+      urlsByJobId.set(row.jobId, list);
+    }
+
+    const newLinksSincePriorByResearch = new Map<string, number>();
+    for (const r of researchList) {
+      const j1 = latestByResearch.get(r.id);
+      const j2 = secondLatestByResearch.get(r.id);
+      if (!j1 || !j2) continue;
+      const since = sincePreviousRunFromUrlLists(urlsByJobId.get(j1.id) ?? [], urlsByJobId.get(j2.id) ?? []);
+      if (since) newLinksSincePriorByResearch.set(r.id, since.newLinkCount);
+    }
+
     const latestJobIds = [...latestByResearch.values()].map((j) => j.id);
     const reportRows =
       latestJobIds.length > 0
@@ -158,12 +202,14 @@ export async function GET(request: Request) {
 
     const researchesPayload = researchList.map((r) => {
       const jr = latestByResearch.get(r.id);
+      const newLinksSincePriorRun = newLinksSincePriorByResearch.get(r.id) ?? null;
       return {
         id: r.id,
         topic: r.topic,
         displayTitle: r.displayTitle ?? null,
         updatedAt: r.updatedAt,
         runCount: runCountByResearch.get(r.id) ?? 0,
+        newLinksSincePriorRun,
         latestRun: jr
           ? {
               id: jr.id,
