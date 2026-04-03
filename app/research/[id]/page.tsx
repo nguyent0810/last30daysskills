@@ -34,6 +34,7 @@ type Payload = {
     archivedAt?: string | null;
     isPinned: boolean;
     note: string | null;
+    shareToken?: string | null;
     createdAt: string;
     updatedAt: string;
   };
@@ -96,6 +97,7 @@ function ResearchPageBody() {
   const [noteBusy, setNoteBusy] = useState(false);
   const [metaError, setMetaError] = useState<string | null>(null);
   const [briefCopyMsg, setBriefCopyMsg] = useState<string | null>(null);
+  const [shareCopyMsg, setShareCopyMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -315,6 +317,50 @@ function ResearchPageBody() {
     });
   }, [data]);
 
+  async function copyShareLink() {
+    if (!id || !data) return;
+    setShareCopyMsg(null);
+    try {
+      let path: string;
+      if (data.research.shareToken) {
+        path = `/t/${data.research.shareToken}`;
+      } else {
+        const res = await fetch(`/api/research/${id}/share`, {
+          method: "POST",
+          credentials: "include",
+        });
+        if (res.status === 401) {
+          setShareCopyMsg("No session. Open the home page once, then return here.");
+          return;
+        }
+        if (!res.ok) {
+          const t = await res.text();
+          let msg = t || res.statusText;
+          try {
+            const j = JSON.parse(t) as { error?: string };
+            if (j.error) msg = j.error;
+          } catch {
+            /* plain text */
+          }
+          setShareCopyMsg(msg);
+          return;
+        }
+        const j = (await res.json()) as { path: string; shareToken: string };
+        path = j.path;
+        setData((prev) =>
+          prev ? { ...prev, research: { ...prev.research, shareToken: j.shareToken } } : prev
+        );
+      }
+      const url = `${window.location.origin}${path}`;
+      await navigator.clipboard.writeText(url);
+      setShareCopyMsg("Link copied");
+      setTimeout(() => setShareCopyMsg(null), 2000);
+    } catch {
+      setShareCopyMsg("Could not copy — copy from the address bar if needed.");
+      setTimeout(() => setShareCopyMsg(null), 4000);
+    }
+  }
+
   async function copyBrief() {
     if (!briefText) return;
     try {
@@ -478,6 +524,21 @@ function ResearchPageBody() {
           </div>
         </div>
       ) : null}
+
+      <div style={{ marginTop: "1rem", maxWidth: "42rem" }}>
+        <button type="button" className="btn btn-secondary btn--sm" onClick={() => void copyShareLink()}>
+          {shareCopyMsg === "Link copied" ? "Link copied" : "Copy share link"}
+        </button>
+        <p className="muted" style={{ marginTop: "0.4rem", fontSize: "0.85rem", maxWidth: "36rem", lineHeight: 1.45 }}>
+          Anyone with this link can view this thread (read-only).
+        </p>
+        {shareCopyMsg === "Link copied" ? <p className="copy-toast">{shareCopyMsg}</p> : null}
+        {shareCopyMsg && shareCopyMsg !== "Link copied" ? (
+          <p className="error" role="alert" style={{ marginTop: "0.35rem", fontSize: "0.85rem" }}>
+            {shareCopyMsg}
+          </p>
+        ) : null}
+      </div>
 
       <div className="thread-workflow">
         <div className="thread-workflow__pin-row">

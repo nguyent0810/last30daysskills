@@ -32,6 +32,10 @@ export const researches = pgTable("researches", {
   isPinned: boolean("is_pinned").notNull().default(false),
   /** Short personal intent (“why this matters”); not markdown. */
   threadNote: text("thread_note"),
+  /** Opaque token for read-only public thread URL; null = not shareable yet. */
+  shareToken: text("share_token"),
+  shareFeedbackUp: integer("share_feedback_up").notNull().default(0),
+  shareFeedbackDown: integer("share_feedback_down").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("researches_user_id_idx").on(table.userId)]);
