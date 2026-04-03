@@ -198,154 +198,172 @@ export default function HomePage() {
   }
 
   return (
-    <div className="product-hero-block">
-      <p className="product-eyebrow">Research · Public signal workspace</p>
-      <h1 className="page-title">Research any topic</h1>
-      <div style={{ maxWidth: "40rem" }}>
-        <p className="page-lead" style={{ marginBottom: 0 }}>
-          Turn one question into a concise research output with report, recap, and source evidence.
-        </p>
-        <p className="muted" style={{ marginTop: "0.65rem", marginBottom: 0, lineHeight: 1.5 }}>
-          We pull public signals from Hacker News, Polymarket, and Reddit into a single run with
-          report, recap, and source evidence.
-        </p>
-        <p className="muted" style={{ marginTop: "0.65rem", marginBottom: 0, lineHeight: 1.5 }}>
-          No sign-in required. Your data stays scoped to this browser session.
-        </p>
-      </div>
-      <form className="product-surface" onSubmit={submit} style={{ marginTop: "1.25rem" }}>
-        <label className="field-label" htmlFor="topic">
-          Topic
-        </label>
-        <textarea
-          id="topic"
-          className="topic-input"
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-          placeholder="e.g. Stable diffusion licensing news"
-          autoComplete="off"
-          disabled={loading}
-          maxLength={500}
-        />
-        <p className="muted" style={{ marginTop: "0.35rem", fontSize: "0.85rem" }}>
-          {topic.length}/500 characters
-        </p>
-        {!canSubmit && !loading ? (
-          <p className="muted" style={{ marginTop: "0.35rem", fontSize: "0.85rem" }}>
-            Type a topic to get started.
+    <div className="home-layout">
+      <section className="home-hero-strip">
+        <p className="product-eyebrow">Research · Public signal workspace</p>
+        <h1 className="page-title">Research any topic</h1>
+        <div className="home-hero-strip__copy">
+          <p className="page-lead" style={{ marginBottom: 0 }}>
+            Turn one question into a concise research output with report, recap, and source evidence.
           </p>
-        ) : null}
-        <div className="suggestions" aria-label="Suggested topics">
-          {SUGGESTIONS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              className="suggestion-chip"
-              onClick={() => setTopic(s)}
-              disabled={loading}
-            >
-              {s}
-            </button>
-          ))}
+          <p className="muted" style={{ marginTop: "0.5rem", marginBottom: 0, lineHeight: 1.5 }}>
+            No sign-in required. Your data stays scoped to this browser session.
+          </p>
         </div>
-        <div className="form-row btn-row">
-          <button type="submit" className="btn btn-primary" disabled={!canSubmit}>
-            {loading ? "Starting…" : "Run research"}
-          </button>
-          <Link href="/history" className="btn btn-ghost">
-            History
-          </Link>
-        </div>
-      </form>
-      {error && <p className="error">{error}</p>}
+      </section>
 
-      {recentThreads && recentThreads.length > 0 ? (
-        <section className="home-recent-threads" aria-label="Recent threads">
-          <h2 className="home-recent-threads__heading">Continue your work</h2>
-          <ul className="home-recent-threads__list">
-            {recentThreads.map((r) => {
-              const label = r.displayTitle?.trim() || r.topic;
-              return (
-                <li key={r.id} className="home-recent-threads__item">
-                  <div className="home-recent-threads__title">{label}</div>
-                  <div className="muted" style={{ fontSize: "0.82rem", marginTop: "0.15rem" }}>
-                    Updated {formatRecentThreadTime(r.updatedAt)}
-                  </div>
-                  <div className="home-recent-threads__links">
-                    <Link href={`/research/${r.id}`} className="home-recent-threads__link">
-                      Thread
-                    </Link>
-                    {r.latestRun ? (
-                      <>
-                        <span className="home-recent-threads__sep" aria-hidden>
-                          {" · "}
-                        </span>
-                        <Link href={`/job/${r.latestRun.id}`} className="home-recent-threads__link">
-                          Latest report
-                        </Link>
-                        {r.latestRun.status === "succeeded" ? (
-                          <>
-                            <span className="home-recent-threads__sep" aria-hidden>
-                              {" · "}
-                            </span>
-                            <button
-                              type="button"
-                              className="btn btn-secondary btn--sm home-recent-threads__ai-btn"
-                              disabled={homeRecap?.loading}
-                              onClick={() => void runHomeRecap(r.latestRun!.id)}
-                            >
-                              AI Summary
-                            </button>
-                          </>
-                        ) : null}
-                      </>
-                    ) : null}
-                  </div>
-                  {r.latestRun && homeRecap && homeRecap.runId === r.latestRun.id ? (
-                    <div className="home-recap-inline" role="region" aria-label="AI summary">
-                      {homeRecap.loading ? <p className="muted">Generating summary…</p> : null}
-                      {homeRecap.error ? (
-                        <>
-                          <p className="gemini-error" role="alert" style={{ marginTop: 0 }}>
-                            {homeRecap.error}
-                          </p>
-                          {homeRecap.details ? (
-                            <details className="run-recap-details">
-                              <summary>Show details</summary>
-                              <pre>{homeRecap.details}</pre>
-                            </details>
+      <section className="home-workspace" aria-label="Home workspace">
+        <div className="home-workspace__primary">
+          <h2 className="section-title home-workspace__heading">Start new research</h2>
+          <p className="section-hint muted home-workspace__hint">
+            Enter a topic, pick a suggestion, and start a new run.
+          </p>
+          <form className="product-surface" onSubmit={submit}>
+            <label className="field-label" htmlFor="topic">
+              Topic
+            </label>
+            <textarea
+              id="topic"
+              className="topic-input"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="e.g. Stable diffusion licensing news"
+              autoComplete="off"
+              disabled={loading}
+              maxLength={500}
+            />
+            <p className="muted" style={{ marginTop: "0.35rem", fontSize: "0.85rem" }}>
+              {topic.length}/500 characters
+            </p>
+            {!canSubmit && !loading ? (
+              <p className="muted" style={{ marginTop: "0.35rem", fontSize: "0.85rem" }}>
+                Type a topic to get started.
+              </p>
+            ) : null}
+            <div className="suggestions" aria-label="Suggested topics">
+              {SUGGESTIONS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className="suggestion-chip"
+                  onClick={() => setTopic(s)}
+                  disabled={loading}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <div className="form-row btn-row">
+              <button type="submit" className="btn btn-primary" disabled={!canSubmit}>
+                {loading ? "Starting…" : "Run research"}
+              </button>
+              <Link href="/history" className="btn btn-ghost">
+                History
+              </Link>
+            </div>
+          </form>
+          {error && <p className="error">{error}</p>}
+        </div>
+
+        <aside className="home-workspace__continuity" aria-label="Continue your work">
+          <section className="home-recent-threads">
+            <h2 className="home-recent-threads__heading">Continue your work</h2>
+            <p className="home-recent-threads__subhead muted">
+              Re-open active threads, jump to the latest report, or run a quick AI summary.
+            </p>
+            {recentThreads && recentThreads.length > 0 ? (
+              <>
+                <ul className="home-recent-threads__list">
+                  {recentThreads.map((r) => {
+                    const label = r.displayTitle?.trim() || r.topic;
+                    return (
+                      <li key={r.id} className="home-recent-threads__item">
+                        <div className="home-recent-threads__title">{label}</div>
+                        <div className="muted" style={{ fontSize: "0.82rem", marginTop: "0.15rem" }}>
+                          Updated {formatRecentThreadTime(r.updatedAt)}
+                        </div>
+                        <div className="home-recent-threads__links">
+                          <Link href={`/research/${r.id}`} className="home-recent-threads__link">
+                            Thread
+                          </Link>
+                          {r.latestRun ? (
+                            <>
+                              <span className="home-recent-threads__sep" aria-hidden>
+                                {" · "}
+                              </span>
+                              <Link href={`/job/${r.latestRun.id}`} className="home-recent-threads__link">
+                                Latest report
+                              </Link>
+                              {r.latestRun.status === "succeeded" ? (
+                                <>
+                                  <span className="home-recent-threads__sep" aria-hidden>
+                                    {" · "}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className="btn btn-secondary btn--sm home-recent-threads__ai-btn"
+                                    disabled={homeRecap?.loading}
+                                    onClick={() => void runHomeRecap(r.latestRun!.id)}
+                                  >
+                                    AI Summary
+                                  </button>
+                                </>
+                              ) : null}
+                            </>
                           ) : null}
-                        </>
-                      ) : null}
-                      {homeRecap.text ? (
-                        <>
-                          <pre className="home-recap-inline__text">{homeRecap.text}</pre>
-                          <div className="home-recap-inline__actions">
-                            <button type="button" className="btn btn-secondary btn--sm" onClick={() => void copyHomeRecap()}>
-                              {homeRecap.copyMsg === "Copied" ? "Copied" : "Copy"}
-                            </button>
-                            <button type="button" className="btn btn-ghost btn--sm" onClick={() => setHomeRecap(null)}>
-                              Dismiss
-                            </button>
-                            {homeRecap.copyMsg && homeRecap.copyMsg !== "Copied" ? (
-                              <span className="muted" style={{ fontSize: "0.8rem" }}>{homeRecap.copyMsg}</span>
+                        </div>
+                        {r.latestRun && homeRecap && homeRecap.runId === r.latestRun.id ? (
+                          <div className="home-recap-inline" role="region" aria-label="AI summary">
+                            {homeRecap.loading ? <p className="muted">Generating summary…</p> : null}
+                            {homeRecap.error ? (
+                              <>
+                                <p className="gemini-error" role="alert" style={{ marginTop: 0 }}>
+                                  {homeRecap.error}
+                                </p>
+                                {homeRecap.details ? (
+                                  <details className="run-recap-details">
+                                    <summary>Show details</summary>
+                                    <pre>{homeRecap.details}</pre>
+                                  </details>
+                                ) : null}
+                              </>
+                            ) : null}
+                            {homeRecap.text ? (
+                              <>
+                                <pre className="home-recap-inline__text">{homeRecap.text}</pre>
+                                <div className="home-recap-inline__actions">
+                                  <button type="button" className="btn btn-secondary btn--sm" onClick={() => void copyHomeRecap()}>
+                                    {homeRecap.copyMsg === "Copied" ? "Copied" : "Copy"}
+                                  </button>
+                                  <button type="button" className="btn btn-ghost btn--sm" onClick={() => setHomeRecap(null)}>
+                                    Dismiss
+                                  </button>
+                                  {homeRecap.copyMsg && homeRecap.copyMsg !== "Copied" ? (
+                                    <span className="muted" style={{ fontSize: "0.8rem" }}>{homeRecap.copyMsg}</span>
+                                  ) : null}
+                                </div>
+                              </>
                             ) : null}
                           </div>
-                        </>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-          <p className="home-recent-threads__foot muted">
-            <Link href="/history" className="home-recent-threads__link">
-              View all in History
-            </Link>
-          </p>
-        </section>
-      ) : null}
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="home-recent-threads__foot muted">
+                  <Link href="/history" className="home-recent-threads__link">
+                    View all in History
+                  </Link>
+                </p>
+              </>
+            ) : (
+              <p className="muted home-recent-threads__empty">
+                No recent threads yet. Your latest runs will appear here.
+              </p>
+            )}
+          </section>
+        </aside>
+      </section>
     </div>
   );
 }

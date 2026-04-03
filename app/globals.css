@@ -1131,6 +1131,70 @@ code {
   margin-bottom: 1.5rem;
 }
 
+.home-layout {
+  max-width: 72rem;
+  margin: 0 auto;
+}
+
+.home-hero-strip {
+  margin-bottom: 1rem;
+}
+
+.home-hero-strip__copy {
+  max-width: 46rem;
+}
+
+.home-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  gap: 1.15rem;
+  align-items: start;
+}
+
+.home-workspace__heading {
+  margin-top: 0.25rem;
+}
+
+.home-workspace__hint {
+  margin-bottom: 0.65rem;
+}
+
+.home-workspace__primary .product-surface {
+  margin-top: 0;
+}
+
+.home-workspace__continuity .home-recent-threads {
+  margin-top: 0;
+  max-width: none;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm), var(--shadow-inset-highlight);
+  padding: 1rem 1rem 0.9rem;
+}
+
+.home-recent-threads__subhead {
+  margin: 0.3rem 0 0.55rem;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.home-recent-threads__empty {
+  margin: 0.35rem 0 0;
+  font-size: 0.86rem;
+}
+
+@media (max-width: 940px) {
+  .home-layout {
+    max-width: none;
+  }
+
+  .home-workspace {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
 .btn--sm {
   padding: 0.38rem 0.7rem;
   font-size: 0.82rem;
