@@ -50,7 +50,16 @@ function HistoryListBody() {
       const res = await fetch(url, { credentials: "include" });
       if (!res.ok) {
         const t = await res.text();
-        setError(t || res.statusText);
+        let msg = t || res.statusText;
+        try {
+          const j = JSON.parse(t) as { error?: string; code?: string };
+          if (j.code === "MISSING_SESSION_SECRET" || j.code === "MISSING_DATABASE_URL") {
+            msg = "Server configuration error. Check Vercel environment variables.";
+          } else if (j.error) msg = j.error;
+        } catch {
+          /* plain text */
+        }
+        setError(msg);
         return;
       }
       const data = (await res.json()) as { researches: ResearchRow[] };

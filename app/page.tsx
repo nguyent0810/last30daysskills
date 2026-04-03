@@ -104,12 +104,6 @@ export default function HomePage() {
           </Link>
         </div>
       </form>
-      {loading && (
-        <p className="loading-block muted">
-          Starting your run…
-          <span className="loading-dots" />
-        </p>
-      )}
       {error && <p className="error">{error}</p>}
     </div>
   );

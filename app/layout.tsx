@@ -18,7 +18,9 @@ export default function RootLayout({
       <body>
         <SessionBootstrap />
         <header className="site-header">
-          <strong>Research</strong>
+          <Link href="/" className="site-header-brand">
+            <strong>Research</strong>
+          </Link>
           <nav className="site-nav">
             <Link href="/">New</Link>
             <Link href="/history">History</Link>

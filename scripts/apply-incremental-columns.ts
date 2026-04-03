@@ -1,21 +1,58 @@
 /**
  * Applies idempotent incremental SQL for researches.display_title and researches.archived_at.
  * Safe to re-run. Requires DATABASE_URL (e.g. via .env.local).
+ *
+ * Parses the URL explicitly so Neon pooler URLs and .env quoting behave reliably with `pg`.
  */
 import { readFileSync } from "fs";
 import { join } from "path";
 import pg from "pg";
 
-const url = process.env.DATABASE_URL;
-if (!url?.trim()) {
-  console.error("DATABASE_URL is not set. Use .env.local or export DATABASE_URL.");
-  process.exit(1);
+function normalizeDatabaseUrl(raw: string): string {
+  let s = raw.trim();
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+    s = s.slice(1, -1);
+  }
+  return s;
+}
+
+function pgConfigFromUrl(raw: string): pg.ClientConfig {
+  const connectionString = normalizeDatabaseUrl(raw);
+  const u = new URL(connectionString);
+  const database = u.pathname.replace(/^\//, "").split("?")[0];
+  const user = decodeURIComponent(u.username);
+  const password = decodeURIComponent(u.password);
+  const sslMode = u.searchParams.get("sslmode");
+  const useSsl =
+    sslMode === "require" ||
+    sslMode === "verify-full" ||
+    u.hostname.includes("neon.tech") ||
+    u.hostname.includes("amazonaws.com");
+
+  return {
+    host: u.hostname,
+    port: Number(u.port || 5432),
+    user,
+    password,
+    database,
+    ssl: useSsl ? { rejectUnauthorized: true } : undefined,
+  };
 }
 
 const files = ["0001_researches_display_title.sql", "0002_researches_archived_at.sql"];
 
 async function main() {
-  const client = new pg.Client({ connectionString: url });
+  const rawUrl = process.env.DATABASE_URL;
+  if (!rawUrl?.trim()) {
+    console.error("DATABASE_URL is not set. Use .env.local or export DATABASE_URL.");
+    process.exit(1);
+  }
+  const config = pgConfigFromUrl(rawUrl);
+  if (!config.password) {
+    console.error("DATABASE_URL has no password segment after parsing. Check the URL format.");
+    process.exit(1);
+  }
+  const client = new pg.Client(config);
   await client.connect();
   try {
     for (const f of files) {

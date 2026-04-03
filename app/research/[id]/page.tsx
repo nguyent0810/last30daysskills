@@ -60,7 +60,16 @@ export default function ResearchPage() {
     }
     if (!res.ok) {
       const t = await res.text();
-      setError(t || res.statusText);
+      let msg = t || res.statusText;
+      try {
+        const j = JSON.parse(t) as { error?: string; code?: string };
+        if (j.code === "MISSING_SESSION_SECRET" || j.code === "MISSING_DATABASE_URL") {
+          msg = "Server configuration error. Check Vercel environment variables.";
+        } else if (j.error) msg = j.error;
+      } catch {
+        /* plain text */
+      }
+      setError(msg);
       return;
     }
     setData((await res.json()) as Payload);
@@ -238,8 +247,12 @@ export default function ResearchPage() {
   if (!id) {
     return (
       <div className="page-shell">
+        <p className="breadcrumb">
+          <Link href="/">Home</Link>
+          {" · "}
+          <Link href="/history">History</Link>
+        </p>
         <p className="error">Invalid link.</p>
-        <Link href="/">Home</Link>
       </div>
     );
   }

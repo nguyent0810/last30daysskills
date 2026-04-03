@@ -8,7 +8,12 @@ import { EditorialDigest } from "@/components/EditorialDigest";
 import { GeminiSummaryPanel } from "@/components/GeminiSummaryPanel";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { DigestItem } from "@/lib/job-page/editorial-digest";
-import { factualInsightLine, mainInsightLine, runningHeroLines } from "@/lib/job-page/hero-insight";
+import {
+  FAILED_RUN_HERO_MAIN,
+  factualInsightLine,
+  mainInsightLine,
+  runningHeroLines,
+} from "@/lib/job-page/hero-insight";
 import { buildReuseMarkdown } from "@/lib/job-page/build-reuse-markdown";
 import { buildReportPreview } from "@/lib/job-page/report-preview";
 import type { ReportModeApi } from "@/lib/report-mode";
@@ -197,6 +202,11 @@ export default function JobPage() {
           <Link href="/history">History</Link>
         </p>
         <p className="error">{error}</p>
+        <p className="muted" style={{ marginTop: "1rem" }}>
+          <Link href="/">Home</Link>
+          {" · "}
+          <Link href="/history">History</Link>
+        </p>
       </div>
     );
   }
@@ -329,7 +339,7 @@ export default function JobPage() {
             <button
               type="button"
               className="btn btn-secondary"
-              disabled={rerunLoading || !j.topic}
+              disabled={rerunLoading || !j.topic || running}
               onClick={() => void rerunResearch()}
             >
               {rerunLoading
@@ -342,6 +352,11 @@ export default function JobPage() {
               History
             </Link>
           </div>
+          {running ? (
+            <p className="muted" style={{ marginTop: "0.35rem", fontSize: "0.88rem" }}>
+              This run is still in progress.
+            </p>
+          ) : null}
         </div>
         {copyMsg && <p className="copy-toast">{copyMsg}</p>}
         {rerunError ? <p className="error" style={{ marginTop: "0.35rem" }}>{rerunError}</p> : null}

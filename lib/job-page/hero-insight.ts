@@ -127,3 +127,6 @@ export function runningHeroLines(topic: string): { main: string; factual: string
     factual: "Sources and report will fill in as each step finishes.",
   };
 }
+
+/** Main hero line when `job.status === "failed"` — neutral; details stay in the error + sources. */
+export const FAILED_RUN_HERO_MAIN = "This run didn't complete. See details below.";
