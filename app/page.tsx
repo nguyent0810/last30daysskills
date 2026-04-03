@@ -2,7 +2,31 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { HOME_RECENT_JOBS_LIMIT, homeRecentJobsListUrl } from "@/lib/history/history-list-view";
+
+type HomeRecentLatestRun = {
+  id: string;
+  status: string;
+  createdAt: string;
+  reportMode: string;
+};
+
+type HomeRecentResearch = {
+  id: string;
+  topic: string;
+  displayTitle?: string | null;
+  updatedAt: string;
+  latestRun: HomeRecentLatestRun | null;
+};
+
+function formatRecentThreadTime(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
 
 const SUGGESTIONS = [
   "Rust async programming",
@@ -17,6 +41,7 @@ export default function HomePage() {
   const [topic, setTopic] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [recentThreads, setRecentThreads] = useState<HomeRecentResearch[] | null>(null);
   const trimmedTopic = topic.trim();
   const canSubmit = trimmedTopic.length > 0 && !loading;
 
@@ -52,6 +77,27 @@ export default function HomePage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(homeRecentJobsListUrl(), { credentials: "include" });
+        if (cancelled) return;
+        if (!res.ok) {
+          setRecentThreads([]);
+          return;
+        }
+        const data = (await res.json()) as { researches: HomeRecentResearch[] };
+        setRecentThreads(data.researches.slice(0, HOME_RECENT_JOBS_LIMIT));
+      } catch {
+        if (!cancelled) setRecentThreads([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="product-hero-block">
@@ -113,6 +159,45 @@ export default function HomePage() {
         </div>
       </form>
       {error && <p className="error">{error}</p>}
+
+      {recentThreads && recentThreads.length > 0 ? (
+        <section className="home-recent-threads" aria-label="Recent threads">
+          <h2 className="home-recent-threads__heading">Recent threads</h2>
+          <ul className="home-recent-threads__list">
+            {recentThreads.map((r) => {
+              const label = r.displayTitle?.trim() || r.topic;
+              return (
+                <li key={r.id} className="home-recent-threads__item">
+                  <div className="home-recent-threads__title">{label}</div>
+                  <div className="muted" style={{ fontSize: "0.82rem", marginTop: "0.15rem" }}>
+                    Updated {formatRecentThreadTime(r.updatedAt)}
+                  </div>
+                  <div className="home-recent-threads__links">
+                    <Link href={`/research/${r.id}`} className="home-recent-threads__link">
+                      Thread
+                    </Link>
+                    {r.latestRun ? (
+                      <>
+                        <span className="home-recent-threads__sep" aria-hidden>
+                          {" · "}
+                        </span>
+                        <Link href={`/job/${r.latestRun.id}`} className="home-recent-threads__link">
+                          Latest report
+                        </Link>
+                      </>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="home-recent-threads__foot muted">
+            <Link href="/history" className="home-recent-threads__link">
+              View all in History
+            </Link>
+          </p>
+        </section>
+      ) : null}
     </div>
   );
 }

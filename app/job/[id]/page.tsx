@@ -568,6 +568,26 @@ export default function JobPage() {
         </p>
       )}
 
+      {j.status !== "succeeded" ? (
+        <p className="job-run-status-banner" role="status">
+          {j.status === "queued" || j.status === "running" ? (
+            <>
+              {j.status === "queued" ? "Queued" : "In progress"} — <strong>the full report is not ready yet.</strong>{" "}
+              This page updates as sources finish and the write-up is generated.
+            </>
+          ) : j.status === "failed" ? (
+            <>
+              <strong>Run failed.</strong> The report below may be partial or empty. See the error message above and
+              each source—there may still be useful items.
+            </>
+          ) : (
+            <>
+              This run is not complete — <strong>do not expect a full report</strong> until the status shows succeeded.
+            </>
+          )}
+        </p>
+      ) : null}
+
       <h2 className="section-title">Sources</h2>
       <p className="section-hint muted">Each source runs on its own. Partial failures are OK if another source delivered items.</p>
 

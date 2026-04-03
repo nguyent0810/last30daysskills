@@ -199,6 +199,11 @@ function HistoryThreadRow({
           <Link href={`/research/${r.id}`} className="btn btn-secondary btn--sm">
             Open thread
           </Link>
+          {r.latestRun ? (
+            <Link href={`/job/${r.latestRun.id}`} className="btn btn-secondary btn--sm">
+              Latest report
+            </Link>
+          ) : null}
           <button
             type="button"
             className="btn btn-secondary btn--sm"

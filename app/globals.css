@@ -686,6 +686,18 @@ code {
   margin-top: 0.25rem;
 }
 
+.job-run-status-banner {
+  margin: 0.75rem 0 0;
+  max-width: 42rem;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--color-text);
+  background: rgba(110, 180, 216, 0.09);
+  border: 1px solid rgba(110, 180, 216, 0.28);
+  border-radius: var(--radius);
+}
+
 .job-hero {
   background: linear-gradient(135deg, rgba(110, 180, 216, 0.08) 0%, var(--color-surface-raised) 55%, var(--color-surface) 100%);
   border: 1px solid var(--color-border-strong);
@@ -1043,6 +1055,17 @@ code {
   align-items: center;
 }
 
+@media (max-width: 540px) {
+  .thread-history-card {
+    padding: 0.7rem 0.8rem;
+  }
+
+  .thread-history-card__actions {
+    gap: 0.45rem 0.4rem;
+    row-gap: 0.5rem;
+  }
+}
+
 .thread-run-insight {
   font-size: 0.85rem;
   color: var(--color-muted);
@@ -1207,6 +1230,99 @@ code {
 .thread-insight-pill--muted {
   opacity: 0.88;
   border-color: var(--color-border);
+}
+
+/* Home recent threads (Phase B — lightweight re-entry) */
+.home-recent-threads {
+  margin-top: 1.75rem;
+  max-width: 40rem;
+}
+
+.home-recent-threads__heading {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.home-recent-threads__list {
+  list-style: none;
+  margin: 0.45rem 0 0;
+  padding: 0;
+}
+
+.home-recent-threads__item {
+  margin: 0.55rem 0 0;
+  padding: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.home-recent-threads__title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.home-recent-threads__links {
+  margin-top: 0.2rem;
+}
+
+.home-recent-threads__sep {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.home-recent-threads__link {
+  color: var(--color-muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.home-recent-threads__link:hover {
+  text-decoration: underline;
+  color: var(--color-text);
+}
+
+.home-recent-threads__foot {
+  margin: 0.65rem 0 0;
+  font-size: 0.85rem;
+}
+
+/* Thread latest run snapshot (Phase A — recall loop) */
+.thread-latest-run {
+  margin-top: 1.15rem;
+  max-width: 42rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-raised);
+}
+
+.thread-latest-run__heading {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.thread-latest-run__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.65rem;
+  align-items: center;
+  font-size: 0.88rem;
+}
+
+.thread-latest-run__insight {
+  margin: 0.55rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--color-text);
+}
+
+.thread-latest-run__cta {
+  margin-top: 0.75rem;
 }
 
 .thread-run-vs-prev {

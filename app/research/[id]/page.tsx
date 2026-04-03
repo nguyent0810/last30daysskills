@@ -80,6 +80,10 @@ function formatTime(iso: string): string {
   });
 }
 
+function latestRunCtaLabel(status: string): string {
+  return status === "succeeded" ? "Open full report" : "Open run";
+}
+
 function ResearchPageBody() {
   const params = useParams();
   const router = useRouter();
@@ -510,6 +514,7 @@ function ResearchPageBody() {
   const isArchived = r.archivedAt != null && r.archivedAt.length > 0;
   const showAiCompression =
     Boolean(data.aiSummaryAvailable) && isThreadAiCompressionEligible(data.runs.length, briefText.length);
+  const latestRun = data.runs.length > 0 ? data.runs[0] : null;
 
   return (
     <div className="page-shell">
@@ -561,7 +566,7 @@ function ResearchPageBody() {
         </h1>
         <p className="thread-page__topic">Topic: {r.topic}</p>
         <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.9rem", maxWidth: "38rem" }}>
-          Run again on the same topic, or open a saved run below.
+          Open the latest run for full evidence, run again, or pick any saved run below.
         </p>
       </motion.header>
 
@@ -580,6 +585,23 @@ function ResearchPageBody() {
             </span>
           </div>
         </div>
+      ) : null}
+
+      {latestRun ? (
+        <section className="thread-latest-run" aria-label="Latest run">
+          <h2 className="thread-latest-run__heading">Latest run</h2>
+          <div className="thread-latest-run__meta">
+            <span className="muted">{formatTime(latestRun.createdAt)}</span>
+            <StatusBadge status={latestRun.status} />
+            <span className="report-mode-pill">{reportModeLabel(latestRun.reportMode)}</span>
+          </div>
+          {latestRun.insightLine?.trim() ? (
+            <p className="thread-latest-run__insight">{latestRun.insightLine.trim()}</p>
+          ) : null}
+          <Link href={`/job/${latestRun.id}`} className="btn btn-primary thread-latest-run__cta">
+            {latestRunCtaLabel(latestRun.status)}
+          </Link>
+        </section>
       ) : null}
 
       <div style={{ marginTop: "1rem", maxWidth: "42rem" }}>

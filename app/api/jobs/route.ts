@@ -9,9 +9,12 @@ import { insightLineFromReport } from "@/lib/job-page/run-insight-line";
 import { sincePreviousRunFromUrlLists } from "@/lib/research/new-links-since-previous";
 import { createResearchRun } from "@/lib/jobs/create-research-run";
 import { toReportModeApi } from "@/lib/report-mode";
+import {
+  isResearchListViewRecent,
+  resolveResearchListLimit,
+} from "@/lib/api/jobs-list-query";
 
 export const dynamic = "force-dynamic";
-const HISTORY_LIMIT = 50;
 
 const postBodySchema = z
   .object({
@@ -77,20 +80,28 @@ export async function GET(request: Request) {
     const db = getDb();
     const { userId, setCookieHeader } = await getOrCreateAnonymousUser();
 
-    const archivedOnly = new URL(request.url).searchParams.get("archived") === "1";
+    const url = new URL(request.url);
+    const archivedOnly = url.searchParams.get("archived") === "1";
+    const listLimit = resolveResearchListLimit(url.searchParams);
+    const recentOnly = isResearchListViewRecent(url.searchParams);
     const archiveClause = archivedOnly ? isNotNull(researches.archivedAt) : isNull(researches.archivedAt);
 
+    /** Default (History): pinned first, then by `updatedAt`. Home strip (`view=recent`): true recency only. */
     const researchList = await db
       .select()
       .from(researches)
       .where(and(eq(researches.userId, userId), archiveClause))
-      .orderBy(desc(researches.isPinned), desc(researches.updatedAt))
-      .limit(HISTORY_LIMIT);
+      .orderBy(
+        ...(recentOnly
+          ? [desc(researches.updatedAt)]
+          : [desc(researches.isPinned), desc(researches.updatedAt)])
+      )
+      .limit(listLimit);
 
     if (researchList.length === 0) {
       const empty = NextResponse.json({
         researches: [],
-        limit: HISTORY_LIMIT,
+        limit: listLimit,
         returnedCount: 0,
       });
       if (setCookieHeader) {
@@ -231,7 +242,7 @@ export async function GET(request: Request) {
 
     const res = NextResponse.json({
       researches: researchesPayload,
-      limit: HISTORY_LIMIT,
+      limit: listLimit,
       returnedCount: researchesPayload.length,
     });
     if (setCookieHeader) {
