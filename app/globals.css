@@ -1279,6 +1279,20 @@ code {
   font-size: 0.85rem;
 }
 
+.home-recent-threads__link-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.home-recent-threads__link-btn:disabled {
+  opacity: 0.65;
+  cursor: default;
+  text-decoration: none;
+}
+
 .home-recent-threads__link:hover {
   text-decoration: underline;
   color: var(--color-text);
@@ -1287,6 +1301,30 @@ code {
 .home-recent-threads__foot {
   margin: 0.65rem 0 0;
   font-size: 0.85rem;
+}
+
+.home-recap-inline {
+  margin-top: 0.45rem;
+  max-width: 38rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface-raised);
+}
+
+.home-recap-inline__text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.home-recap-inline__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 /* Thread latest run snapshot (Phase A — recall loop) */

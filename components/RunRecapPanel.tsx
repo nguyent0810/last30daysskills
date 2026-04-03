@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-const GEMINI_BYOK_STORAGE_KEY = "crm_ai_recap_gemini_api_key";
+import {
+  clearLocalGeminiApiKey,
+  readLocalGeminiApiKey,
+  writeLocalGeminiApiKey,
+} from "@/lib/ai/run-recap/byok-local";
 
 export function RunRecapPanel({
   jobId,
@@ -24,12 +27,7 @@ export function RunRecapPanel({
   const [savedKey, setSavedKey] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const v = localStorage.getItem(GEMINI_BYOK_STORAGE_KEY);
-      setSavedKey(v && v.trim() ? v : null);
-    } catch {
-      setSavedKey(null);
-    }
+    setSavedKey(readLocalGeminiApiKey());
   }, []);
 
   const canGenerateRecap = serverAiRecapConfigured || Boolean(savedKey?.trim());
@@ -102,27 +100,12 @@ export function RunRecapPanel({
   }
 
   function saveGeminiLocally() {
-    const t = draftKey.trim();
-    try {
-      if (t) {
-        localStorage.setItem(GEMINI_BYOK_STORAGE_KEY, t);
-        setSavedKey(t);
-      } else {
-        localStorage.removeItem(GEMINI_BYOK_STORAGE_KEY);
-        setSavedKey(null);
-      }
-    } catch {
-      /* ignore quota / private mode */
-    }
+    setSavedKey(writeLocalGeminiApiKey(draftKey));
     setDraftKey("");
   }
 
   function clearGeminiLocally() {
-    try {
-      localStorage.removeItem(GEMINI_BYOK_STORAGE_KEY);
-    } catch {
-      /* ignore */
-    }
+    clearLocalGeminiApiKey();
     setSavedKey(null);
     setDraftKey("");
   }

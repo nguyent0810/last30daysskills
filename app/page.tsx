@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { HOME_RECENT_JOBS_LIMIT, homeRecentJobsListUrl } from "@/lib/history/history-list-view";
+import { readLocalGeminiApiKey } from "@/lib/ai/run-recap/byok-local";
 
 type HomeRecentLatestRun = {
   id: string;
@@ -18,6 +19,14 @@ type HomeRecentResearch = {
   displayTitle?: string | null;
   updatedAt: string;
   latestRun: HomeRecentLatestRun | null;
+};
+
+type HomeRecapState = {
+  runId: string;
+  loading: boolean;
+  text: string | null;
+  error: string | null;
+  copyMsg: string | null;
 };
 
 function formatRecentThreadTime(iso: string): string {
@@ -42,6 +51,7 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [recentThreads, setRecentThreads] = useState<HomeRecentResearch[] | null>(null);
+  const [homeRecap, setHomeRecap] = useState<HomeRecapState | null>(null);
   const trimmedTopic = topic.trim();
   const canSubmit = trimmedTopic.length > 0 && !loading;
 
@@ -98,6 +108,92 @@ export default function HomePage() {
       cancelled = true;
     };
   }, []);
+
+  async function runHomeRecap(runId: string) {
+    const localGeminiKey = readLocalGeminiApiKey();
+    setHomeRecap({
+      runId,
+      loading: true,
+      text: null,
+      error: null,
+      copyMsg: null,
+    });
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (localGeminiKey) {
+        headers["X-Gemini-API-Key"] = localGeminiKey;
+      }
+
+      const res = await fetch(`/api/jobs/${runId}/ai-recap`, {
+        method: "POST",
+        headers,
+        credentials: "include",
+        body: JSON.stringify({}),
+      });
+
+      const raw = await res.text();
+      let j: { text?: string; error?: string } = {};
+      try {
+        j = JSON.parse(raw) as typeof j;
+      } catch {
+        // keep j as {}
+      }
+      if (!res.ok) {
+        setHomeRecap({
+          runId,
+          loading: false,
+          text: null,
+          error: j.error ?? raw ?? res.statusText,
+          copyMsg: null,
+        });
+        return;
+      }
+      const text = typeof j.text === "string" ? j.text.trim() : "";
+      if (!text) {
+        setHomeRecap({
+          runId,
+          loading: false,
+          text: null,
+          error: "Empty response",
+          copyMsg: null,
+        });
+        return;
+      }
+      setHomeRecap({
+        runId,
+        loading: false,
+        text,
+        error: null,
+        copyMsg: null,
+      });
+    } catch (e) {
+      setHomeRecap({
+        runId,
+        loading: false,
+        text: null,
+        error: e instanceof Error ? e.message : "Request failed",
+        copyMsg: null,
+      });
+    }
+  }
+
+  async function copyHomeRecap() {
+    if (!homeRecap?.text) return;
+    try {
+      await navigator.clipboard.writeText(homeRecap.text);
+      setHomeRecap((prev) => (prev ? { ...prev, copyMsg: "Copied" } : prev));
+      setTimeout(() => {
+        setHomeRecap((prev) => (prev ? { ...prev, copyMsg: null } : prev));
+      }, 2000);
+    } catch {
+      setHomeRecap((prev) => (prev ? { ...prev, copyMsg: "Could not copy" } : prev));
+      setTimeout(() => {
+        setHomeRecap((prev) => (prev ? { ...prev, copyMsg: null } : prev));
+      }, 3000);
+    }
+  }
 
   return (
     <div className="product-hero-block">
@@ -184,9 +280,50 @@ export default function HomePage() {
                         <Link href={`/job/${r.latestRun.id}`} className="home-recent-threads__link">
                           Latest report
                         </Link>
+                        {r.latestRun.status === "succeeded" ? (
+                          <>
+                            <span className="home-recent-threads__sep" aria-hidden>
+                              {" · "}
+                            </span>
+                            <button
+                              type="button"
+                              className="home-recent-threads__link home-recent-threads__link-btn"
+                              disabled={homeRecap?.loading}
+                              onClick={() => void runHomeRecap(r.latestRun!.id)}
+                            >
+                              AI Summary
+                            </button>
+                          </>
+                        ) : null}
                       </>
                     ) : null}
                   </div>
+                  {r.latestRun && homeRecap && homeRecap.runId === r.latestRun.id ? (
+                    <div className="home-recap-inline" role="region" aria-label="AI summary">
+                      {homeRecap.loading ? <p className="muted">Generating summary…</p> : null}
+                      {homeRecap.error ? (
+                        <p className="gemini-error" role="alert" style={{ marginTop: 0 }}>
+                          {homeRecap.error}
+                        </p>
+                      ) : null}
+                      {homeRecap.text ? (
+                        <>
+                          <pre className="home-recap-inline__text">{homeRecap.text}</pre>
+                          <div className="home-recap-inline__actions">
+                            <button type="button" className="btn btn-secondary btn--sm" onClick={() => void copyHomeRecap()}>
+                              {homeRecap.copyMsg === "Copied" ? "Copied" : "Copy"}
+                            </button>
+                            <button type="button" className="btn btn-ghost btn--sm" onClick={() => setHomeRecap(null)}>
+                              Dismiss
+                            </button>
+                            {homeRecap.copyMsg && homeRecap.copyMsg !== "Copied" ? (
+                              <span className="muted" style={{ fontSize: "0.8rem" }}>{homeRecap.copyMsg}</span>
+                            ) : null}
+                          </div>
+                        </>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </li>
               );
             })}
