@@ -671,7 +671,12 @@ export default function JobPage() {
                   : "This run is still building output. Start with Overview, then open Full report when ready."}
               </p>
               {data.publishAngles ? (
-                <PublishAnglesPanel jobStatus={j.status} publishAngles={data.publishAngles} />
+                <PublishAnglesPanel
+                  jobId={id}
+                  jobStatus={j.status}
+                  publishAngles={data.publishAngles}
+                  aiRecapConfigured={Boolean(data.aiRecapConfigured)}
+                />
               ) : null}
             </div>
           ) : null}
