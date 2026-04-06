@@ -1106,6 +1106,121 @@ code {
   margin-bottom: 0;
 }
 
+.publish-angles {
+  margin-top: 1.15rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.publish-angles__title {
+  margin: 0 0 0.25rem;
+  font-size: 0.98rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--color-muted);
+}
+
+.publish-angles__sub {
+  margin: 0 0 0.65rem;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.publish-angles__hold,
+.publish-angles__warn,
+.publish-angles__momentum {
+  margin: 0 0 0.5rem;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.publish-angles__warn {
+  margin-bottom: 0.65rem;
+}
+
+.publish-angles__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.publish-angles__card {
+  margin: 0;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.publish-angles__eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.publish-angles__card-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.publish-angles__dek {
+  margin: 0 0 0.45rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--color-text);
+}
+
+.publish-angles__why {
+  margin: 0 0 0.45rem;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.publish-angles__outline {
+  margin: 0 0 0.55rem;
+  padding-left: 1.15rem;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.publish-angles__outline li {
+  margin-bottom: 0.25rem;
+}
+
+.publish-angles__cites-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.publish-angles__cite-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.publish-angles__cite-list li {
+  margin-bottom: 0.2rem;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.publish-angles__cite-link {
+  font-weight: 600;
+}
+
+.publish-angles__cite-meta {
+  font-size: 0.8rem;
+}
+
 .workspace-history__actions {
   display: flex;
   flex-wrap: wrap;

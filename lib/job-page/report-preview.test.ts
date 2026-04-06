@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildReportPreview, splitNumberedFindingBlocks } from "./report-preview";
+import { buildReportPreview, parseFindingBlocksFromReport, splitNumberedFindingBlocks } from "./report-preview";
 
 const SAMPLE = `# Research: Test
 
@@ -25,6 +25,18 @@ describe("splitNumberedFindingBlocks", () => {
     const blocks = splitNumberedFindingBlocks(`1. A\n\n2. B`);
     expect(blocks).toHaveLength(2);
     expect(blocks[0]).toMatch(/^1\. A/);
+  });
+});
+
+describe("parseFindingBlocksFromReport", () => {
+  it("returns numbered blocks under the findings heading", () => {
+    const blocks = parseFindingBlocksFromReport(SAMPLE);
+    expect(blocks).toHaveLength(2);
+    expect(blocks[0]).toMatch(/First/);
+  });
+
+  it("returns empty array when heading is missing", () => {
+    expect(parseFindingBlocksFromReport("# Hello\n\nNo section.")).toEqual([]);
   });
 });
 

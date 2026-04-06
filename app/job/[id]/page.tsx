@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DURATION_FAST_S, SHELL_EASE } from "@/lib/motion/shell";
 import ReactMarkdown from "react-markdown";
 import { EditorialDigest } from "@/components/EditorialDigest";
+import { PublishAnglesPanel } from "@/components/PublishAnglesPanel";
 import { RunRecapPanel } from "@/components/RunRecapPanel";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { DigestItem } from "@/lib/job-page/editorial-digest";
@@ -25,6 +26,7 @@ import {
   sourceCardStatusLabel,
   sourceInterpretation,
 } from "@/lib/job-page/source-interpretation";
+import type { PublishAnglesPhase1 } from "@/lib/publish-angles/types";
 
 type SourceRun = {
   source: string;
@@ -60,6 +62,7 @@ type JobPayload = {
   aiRecapConfigured?: boolean;
   /** Present when `aiRecapConfigured` is true; used for recap status copy only. */
   aiRecapServerKind?: "hf" | "gemini";
+  publishAngles: PublishAnglesPhase1;
 };
 type WorkspaceTab = "overview" | "report" | "recap" | "history";
 
@@ -667,6 +670,9 @@ export default function JobPage() {
                   ? "This run is ready for review."
                   : "This run is still building output. Start with Overview, then open Full report when ready."}
               </p>
+              {data.publishAngles ? (
+                <PublishAnglesPanel jobStatus={j.status} publishAngles={data.publishAngles} />
+              ) : null}
             </div>
           ) : null}
 

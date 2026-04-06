@@ -8,6 +8,7 @@ import { resolveJobDetailThread } from "@/lib/jobs/job-detail-thread";
 import type { JobDetailThreadPayload } from "@/lib/jobs/job-detail-thread";
 import { toReportModeApi } from "@/lib/report-mode";
 import { resolveThreadCompressionProvider } from "@/lib/ai/thread-compression/select";
+import { buildPublishAnglesPhase1 } from "@/lib/publish-angles/build-phase1";
 
 export const dynamic = "force-dynamic";
 
@@ -139,6 +140,24 @@ export async function GET(
       };
     }
 
+    const publishAngles = buildPublishAnglesPhase1({
+      reportMarkdown: report?.content ?? null,
+      items: items.map((row) => ({
+        id: row.id,
+        title: row.title,
+        url: row.url,
+        snippet: row.snippet,
+        score: row.score,
+        source: row.source,
+      })),
+      sourceRuns: runs.map((r) => ({
+        source: r.source,
+        status: r.status,
+        itemCount: r.itemCount,
+      })),
+      jobTopic: job.topic,
+    });
+
     return jsonNoStore({
       job: {
         id: job.id,
@@ -157,6 +176,7 @@ export async function GET(
       geminiAvailable: geminiConfigured(),
       aiRecapConfigured: aiRecapConfigured(),
       aiRecapServerKind: aiRecapServerKind(),
+      publishAngles,
     });
   } catch (e) {
     return jsonFromRouteError(e, "[api/jobs/[id]]");

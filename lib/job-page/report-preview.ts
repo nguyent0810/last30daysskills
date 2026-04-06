@@ -30,6 +30,21 @@ export function splitNumberedFindingBlocks(body: string): string[] {
   return parts.map((p) => p.trim()).filter(Boolean);
 }
 
+/**
+ * Numbered finding blocks under the standard findings heading (same logic as report preview).
+ * Returns [] if the section is missing or empty.
+ */
+export function parseFindingBlocksFromReport(full: string): string[] {
+  const m = FINDINGS_HEADING.exec(full);
+  if (!m || m.index === undefined) return [];
+
+  const headingEnd = m.index + m[0].length;
+  const bodyEnd = nextSectionIndex(full, headingEnd);
+  const findingsBody = bodyEnd === -1 ? full.slice(headingEnd) : full.slice(headingEnd, bodyEnd);
+
+  return splitNumberedFindingBlocks(findingsBody);
+}
+
 export function buildReportPreview(full: string, maxVisible = DEFAULT_VISIBLE_FINDINGS): ReportPreview {
   const m = FINDINGS_HEADING.exec(full);
   if (!m || m.index === undefined) {
