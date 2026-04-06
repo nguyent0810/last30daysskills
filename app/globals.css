@@ -24,7 +24,12 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-raised: 0 4px 20px rgba(0, 0, 0, 0.35);
   --shadow-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.045);
-  --max-content: 48rem;
+  /* Phase 3 — shell vs reading: wide workspace frame, calm prose measure */
+  --shell-max-width: min(118rem, calc(100vw - 2rem));
+  --reading-measure: 48rem;
+  --reading-measure-wide: 52rem;
+  /* Legacy alias — prefer --reading-measure in new code */
+  --max-content: var(--reading-measure);
   /* Inline fallbacks (research page, etc.) */
   --border: var(--color-border-strong);
   --surface-muted: rgba(255, 255, 255, 0.045);
@@ -51,10 +56,7 @@ body {
 }
 
 .site-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.875rem 1.25rem;
+  padding: 0.875rem 0;
   background: rgba(20, 25, 32, 0.82);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--color-border-strong);
@@ -62,6 +64,18 @@ body {
   position: sticky;
   top: 0;
   z-index: 20;
+}
+
+.site-header__inner {
+  max-width: var(--shell-max-width);
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 clamp(1rem, 2.5vw, 1.75rem);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
 }
 
 .site-header-brand {
@@ -134,9 +148,10 @@ body {
 }
 
 .site-main {
-  max-width: var(--max-content);
+  max-width: var(--shell-max-width);
+  width: 100%;
   margin: 0 auto;
-  padding: 1.5rem 1.25rem 3rem;
+  padding: 1.5rem clamp(1rem, 2.5vw, 1.75rem) 3rem;
 }
 
 .site-shell {
@@ -152,9 +167,9 @@ body {
 }
 
 .site-footer__inner {
-  max-width: var(--max-content);
+  max-width: var(--shell-max-width);
   margin: 0 auto;
-  padding: 0.8rem 1.25rem 1rem;
+  padding: 0.8rem clamp(1rem, 2.5vw, 1.75rem) 1rem;
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem 0.55rem;
@@ -177,7 +192,29 @@ body {
 
 .page-lead {
   margin: 0 0 1.25rem;
-  max-width: 36rem;
+  max-width: min(36rem, 100%);
+}
+
+/* Mode label for workspace framing (Launch / Signal review / Continuity / …) */
+.workspace-mode-eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(110, 180, 216, 0.72);
+}
+
+/* Long-form and narrative blocks — keep calm line length inside a wide shell */
+.workspace-reading {
+  max-width: var(--reading-measure);
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.workspace-reading--wide {
+  max-width: var(--reading-measure-wide);
 }
 
 .product-eyebrow {
@@ -598,6 +635,21 @@ textarea.topic-input:focus {
   gap: 0.65rem;
 }
 
+/* Thread saved runs — use horizontal space on wide layouts without feeling like a dashboard */
+@media (min-width: 900px) {
+  ul.thread-runs-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+}
+
+@media (min-width: 1320px) {
+  ul.thread-runs-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .history-card {
   display: block;
   padding: 0.85rem 1rem;
@@ -783,12 +835,20 @@ code {
 
 /* —— Product shell (job + aligned pages) —— */
 .page-shell {
-  max-width: var(--max-content);
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+}
+
+/* Shared / read-only links stay reader-narrow, centered in the wide shell */
+.page-shell.public-thread {
+  max-width: min(var(--reading-measure), 100%);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .page-shell.job-page {
-  max-width: 72rem;
+  max-width: 100%;
 }
 
 .job-page-layout {
@@ -808,14 +868,10 @@ code {
 }
 
 @media (min-width: 1180px) {
-  .page-shell.job-page {
-    max-width: min(88rem, calc(100vw - 1.5rem));
-  }
-
   .job-page-layout {
     display: grid;
-    grid-template-columns: minmax(10.25rem, 11.75rem) minmax(0, 1fr) minmax(10.25rem, 11.75rem);
-    gap: 1.1rem;
+    grid-template-columns: minmax(11rem, 12.5rem) minmax(0, 1fr) minmax(11rem, 12.5rem);
+    gap: 1.25rem;
     align-items: start;
   }
 
@@ -1023,7 +1079,7 @@ code {
 
 .job-run-status-banner {
   margin: 0.75rem 0 0;
-  max-width: 42rem;
+  max-width: 100%;
   padding: 0.65rem 0.85rem;
   font-size: 0.88rem;
   line-height: 1.45;
@@ -1251,7 +1307,7 @@ code {
 }
 
 .report-md--shell {
-  max-width: 52rem;
+  max-width: min(var(--reading-measure-wide), 100%);
   margin-top: 0.75rem;
   font-size: 1.04rem;
   line-height: 1.65;
@@ -1546,6 +1602,11 @@ code {
   max-width: none;
 }
 
+.home-workspace-launcher {
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(110, 180, 216, 0.18);
+}
+
 .home-hero-strip {
   max-width: 74rem;
   margin: 0 auto 1rem;
@@ -1613,6 +1674,26 @@ code {
   padding: 0.38rem 0.7rem;
   font-size: 0.82rem;
   font-weight: 600;
+}
+
+/* Phase 3 — thread as continuity workspace (shell is wide; blocks carry their own measure) */
+.thread-workspace {
+  width: 100%;
+}
+
+.thread-workspace__masthead {
+  padding-bottom: 1rem;
+  margin-bottom: 0.35rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+}
+
+.thread-workspace__narrow-block {
+  max-width: min(var(--reading-measure-wide), 100%);
+}
+
+.history-workspace {
+  padding-top: 0.4rem;
+  border-top: 1px solid rgba(110, 180, 216, 0.14);
 }
 
 /* Thread ↔ run orientation */
@@ -1755,7 +1836,7 @@ code {
 /* Phase 3 — pin + thread note (workflow) */
 .thread-workflow {
   margin-top: 1rem;
-  max-width: 42rem;
+  max-width: min(var(--reading-measure-wide), 100%);
 }
 
 .thread-workflow__pin-row {
@@ -1782,7 +1863,7 @@ code {
 /* Phase 4 — pasteable thread brief (thread page only) */
 .thread-brief {
   margin-top: 1.25rem;
-  max-width: 42rem;
+  max-width: min(var(--reading-measure-wide), 100%);
   padding: 0.85rem 1rem;
   border-radius: var(--radius);
   border: 1px solid var(--color-border);
@@ -1858,7 +1939,7 @@ code {
   border: 1px solid var(--color-border);
   background: var(--color-surface-raised);
   box-shadow: var(--shadow-sm), var(--shadow-inset-highlight);
-  max-width: 42rem;
+  max-width: min(var(--reading-measure-wide), 100%);
 }
 
 .thread-insight-strip__summary {
@@ -2002,7 +2083,7 @@ code {
 /* Thread latest run snapshot (Phase A — recall loop) */
 .thread-latest-run {
   margin-top: 1.15rem;
-  max-width: 42rem;
+  max-width: min(46rem, 100%);
   padding: 0.85rem 0.95rem;
   border-radius: var(--radius);
   border: 1px solid var(--color-border);
@@ -2048,10 +2129,7 @@ code {
   width: 100%;
 }
 
-/* Phase 5 — public shared thread (read-only) */
-.public-thread {
-  max-width: 48rem;
-}
+/* Phase 5 — public shared thread (read-only); width capped via .page-shell.public-thread */
 
 .public-thread__framing {
   margin-top: 0.5rem;

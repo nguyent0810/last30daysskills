@@ -472,7 +472,7 @@ function ResearchPageBody() {
 
   if (!id) {
     return (
-      <div className="page-shell">
+      <div className="page-shell thread-workspace">
         <p className="breadcrumb">
           <Link href="/">Home</Link>
           {" · "}
@@ -485,7 +485,7 @@ function ResearchPageBody() {
 
   if (error) {
     return (
-      <div className="page-shell">
+      <div className="page-shell thread-workspace">
         <p className="breadcrumb">
           <Link href="/">Home</Link>
           {" · "}
@@ -498,12 +498,13 @@ function ResearchPageBody() {
 
   if (!data) {
     return (
-      <div className="page-shell">
+      <div className="page-shell thread-workspace">
         <p className="breadcrumb">
           <Link href="/">Home</Link>
           {" · "}
           <Link href="/history">History</Link>
         </p>
+        <p className="workspace-mode-eyebrow">Research continuity</p>
         <div className="loading-block muted">Loading thread…</div>
       </div>
     );
@@ -517,7 +518,7 @@ function ResearchPageBody() {
   const latestRun = data.runs.length > 0 ? data.runs[0] : null;
 
   return (
-    <div className="page-shell">
+    <div className="page-shell thread-workspace">
       <p className="breadcrumb">
         <Link href="/">Home</Link>
         {" · "}
@@ -525,6 +526,7 @@ function ResearchPageBody() {
         {" · "}
         <span className="muted">Thread</span>
       </p>
+      <p className="workspace-mode-eyebrow">Research continuity</p>
 
       {isArchived ? (
         <div
@@ -555,37 +557,39 @@ function ResearchPageBody() {
 
       {archiveError ? <p className="error" style={{ marginTop: "0.5rem" }}>{archiveError}</p> : null}
 
-      <motion.header
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={shellTransitionMedium}
-        style={{ marginTop: "0.35rem" }}
-      >
-        <h1 className="page-title" style={{ marginBottom: "0.35rem" }}>
-          {threadLabel}
-        </h1>
-        <p className="thread-page__topic">Topic: {r.topic}</p>
-        <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.9rem", maxWidth: "38rem" }}>
-          Open the latest run for full evidence, run again, or pick any saved run below.
-        </p>
-      </motion.header>
+      <div className="thread-workspace__masthead">
+        <motion.header
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={shellTransitionMedium}
+          style={{ marginTop: "0.35rem" }}
+        >
+          <h1 className="page-title" style={{ marginBottom: "0.35rem" }}>
+            {threadLabel}
+          </h1>
+          <p className="thread-page__topic">Topic: {r.topic}</p>
+          <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.9rem", maxWidth: "38rem" }}>
+            Open the latest run for full evidence, run again, or pick any saved run below.
+          </p>
+        </motion.header>
 
-      {data.threadInsight ? (
-        <div className="thread-insight-strip">
-          <p className="thread-insight-strip__summary">{data.threadInsight.summaryLine}</p>
-          {data.sincePreviousRun ? (
-            <p className="thread-insight-strip__foot">
-              {data.sincePreviousRun.newLinkCount} new link{data.sincePreviousRun.newLinkCount === 1 ? "" : "s"} since the previous run.
-            </p>
-          ) : null}
-          <div className="thread-insight-strip__pills">
-            <span className="thread-insight-pill">{directionPillLabel(data.threadInsight.direction)}</span>
-            <span className="thread-insight-pill thread-insight-pill--muted">
-              {dominancePillLabel(data.threadInsight.sourceDominance)}
-            </span>
+        {data.threadInsight ? (
+          <div className="thread-insight-strip">
+            <p className="thread-insight-strip__summary">{data.threadInsight.summaryLine}</p>
+            {data.sincePreviousRun ? (
+              <p className="thread-insight-strip__foot">
+                {data.sincePreviousRun.newLinkCount} new link{data.sincePreviousRun.newLinkCount === 1 ? "" : "s"} since the previous run.
+              </p>
+            ) : null}
+            <div className="thread-insight-strip__pills">
+              <span className="thread-insight-pill">{directionPillLabel(data.threadInsight.direction)}</span>
+              <span className="thread-insight-pill thread-insight-pill--muted">
+                {dominancePillLabel(data.threadInsight.sourceDominance)}
+              </span>
+            </div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
 
       {latestRun ? (
         <section className="thread-latest-run" aria-label="Latest run">
@@ -604,7 +608,7 @@ function ResearchPageBody() {
         </section>
       ) : null}
 
-      <div style={{ marginTop: "1rem", maxWidth: "42rem" }}>
+      <div className="thread-workspace__narrow-block" style={{ marginTop: "1rem" }}>
         <button type="button" className="btn btn-secondary btn--sm" onClick={() => void copyShareLink()}>
           {shareCopyMsg === "Link copied" ? "Link copied" : "Copy share link"}
         </button>
@@ -828,7 +832,7 @@ function ResearchPageBody() {
           </p>
         </div>
       ) : (
-        <ul className="history-list" style={{ marginTop: "0.65rem" }}>
+        <ul className="history-list thread-runs-grid" style={{ marginTop: "0.65rem" }}>
           {data.runs.map((run, runIndex) => (
             <motion.li
               key={run.id}
@@ -881,12 +885,13 @@ export default function ResearchPage() {
   return (
     <Suspense
       fallback={
-        <div className="page-shell">
+        <div className="page-shell thread-workspace">
           <p className="breadcrumb">
             <Link href="/">Home</Link>
             {" · "}
             <Link href="/history">History</Link>
           </p>
+          <p className="workspace-mode-eyebrow">Research continuity</p>
           <div className="loading-block muted">Loading thread…</div>
         </div>
       }

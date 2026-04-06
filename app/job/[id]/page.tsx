@@ -475,6 +475,7 @@ export default function JobPage() {
           </>
         ) : null}
       </p>
+      <p className="workspace-mode-eyebrow">Signal review</p>
 
       {thread ? (
         <div className="thread-context-bar">
@@ -627,58 +628,60 @@ export default function JobPage() {
             </p>
           ) : null}
 
-      <section className="job-brief">
-        <h2 className="section-title">What we found</h2>
-        <p className="section-hint muted">Quick takeaway first: what matters most before you read deeper.</p>
-        <div className="job-hero">
-          <p className="job-hero__main">{heroMain}</p>
-          <p className="job-hero__factual">{heroFactual}</p>
-        </div>
+      <div className="workspace-reading">
+        <section className="job-brief">
+          <h2 className="section-title">What we found</h2>
+          <p className="section-hint muted">Quick takeaway first: what matters most before you read deeper.</p>
+          <div className="job-hero">
+            <p className="job-hero__main">{heroMain}</p>
+            <p className="job-hero__factual">{heroFactual}</p>
+          </div>
 
-        <h1 className="page-title job-page__title">{j.topic}</h1>
+          <h1 className="page-title job-page__title">{j.topic}</h1>
 
-        <div className="job-meta">
-          <motion.span
-            key={j.status}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: DURATION_FAST_S, ease: SHELL_EASE }}
-            style={{ display: "inline-block" }}
-          >
-            <StatusBadge status={j.status} />
-          </motion.span>
-          {!terminal && <span className="muted">Updates every few seconds.</span>}
-          {terminal && j.status === "succeeded" && (
-            <span className="report-mode-pill">Report: {reportModeLabel(data.reportMode)}</span>
-          )}
-        </div>
-      </section>
+          <div className="job-meta">
+            <motion.span
+              key={j.status}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: DURATION_FAST_S, ease: SHELL_EASE }}
+              style={{ display: "inline-block" }}
+            >
+              <StatusBadge status={j.status} />
+            </motion.span>
+            {!terminal && <span className="muted">Updates every few seconds.</span>}
+            {terminal && j.status === "succeeded" && (
+              <span className="report-mode-pill">Report: {reportModeLabel(data.reportMode)}</span>
+            )}
+          </div>
+        </section>
 
-      {j.error && (
-        <p className="error job-page__job-error">
-          <strong>This run could not complete:</strong> {j.error}
-        </p>
-      )}
+        {j.error && (
+          <p className="error job-page__job-error">
+            <strong>This run could not complete:</strong> {j.error}
+          </p>
+        )}
 
-      {j.status !== "succeeded" ? (
-        <p className="job-run-status-banner" role="status">
-          {j.status === "queued" || j.status === "running" ? (
-            <>
-              {j.status === "queued" ? "Queued" : "In progress"} — <strong>the full report is not ready yet.</strong>{" "}
-              This page updates as sources finish and the write-up is generated.
-            </>
-          ) : j.status === "failed" ? (
-            <>
-              <strong>Run failed.</strong> The report below may be partial or empty. See the error message above and
-              each source—there may still be useful items.
-            </>
-          ) : (
-            <>
-              This run is not complete — <strong>do not expect a full report</strong> until the status shows succeeded.
-            </>
-          )}
-        </p>
-      ) : null}
+        {j.status !== "succeeded" ? (
+          <p className="job-run-status-banner" role="status">
+            {j.status === "queued" || j.status === "running" ? (
+              <>
+                {j.status === "queued" ? "Queued" : "In progress"} — <strong>the full report is not ready yet.</strong>{" "}
+                This page updates as sources finish and the write-up is generated.
+              </>
+            ) : j.status === "failed" ? (
+              <>
+                <strong>Run failed.</strong> The report below may be partial or empty. See the error message above and
+                each source—there may still be useful items.
+              </>
+            ) : (
+              <>
+                This run is not complete — <strong>do not expect a full report</strong> until the status shows succeeded.
+              </>
+            )}
+          </p>
+        ) : null}
+      </div>
 
       <section className="job-highlights">
         <h2 className="section-title">Key findings</h2>

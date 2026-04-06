@@ -309,6 +309,7 @@ function HistoryListBody() {
   if (error) {
     return (
       <>
+        <p className="workspace-mode-eyebrow">Continuity</p>
         <h1 className="page-title">History</h1>
         <p className="error">{error}</p>
         <p className="muted" style={{ marginTop: "1rem" }}>
@@ -329,6 +330,7 @@ function HistoryListBody() {
   if (!researches) {
     return (
       <>
+        <p className="workspace-mode-eyebrow">Continuity</p>
         <h1 className="page-title">History</h1>
         <div className="loading-block muted">Loading History…</div>
       </>
@@ -338,6 +340,7 @@ function HistoryListBody() {
   if (researches.length === 0 && !archivedMode) {
     return (
       <>
+        <p className="workspace-mode-eyebrow">Continuity</p>
         <h1 className="page-title">History</h1>
         <div className="empty-state">
           <p className="muted" style={{ margin: 0 }}>
@@ -363,6 +366,7 @@ function HistoryListBody() {
             ← Active threads
           </Link>
         </p>
+        <p className="workspace-mode-eyebrow">Continuity</p>
         <h1 className="page-title">Archived threads</h1>
         <div className="empty-state">
           <p className="muted" style={{ margin: 0 }}>
@@ -388,6 +392,7 @@ function HistoryListBody() {
           </Link>
         </p>
       ) : null}
+      <p className="workspace-mode-eyebrow">Continuity</p>
       <h1 className="page-title">{archivedMode ? "Archived threads" : "History"}</h1>
       <p className="page-lead muted">
         {archivedMode
@@ -422,10 +427,11 @@ function HistoryListBody() {
 
 export default function HistoryPage() {
   return (
-    <div className="product-hero-block">
+    <div className="product-hero-block history-workspace">
       <Suspense
         fallback={
           <>
+            <p className="workspace-mode-eyebrow">Continuity</p>
             <h1 className="page-title">History</h1>
             <div className="loading-block muted">Loading History…</div>
           </>

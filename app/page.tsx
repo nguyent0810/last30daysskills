@@ -198,9 +198,9 @@ export default function HomePage() {
   }
 
   return (
-    <div className="home-layout">
+    <div className="home-layout home-workspace-launcher">
       <section className="home-hero-strip">
-        <p className="product-eyebrow">Research · Public signal workspace</p>
+        <p className="product-eyebrow">Investigation workspace · Launch</p>
         <h1 className="page-title">Research any topic</h1>
         <div className="home-hero-strip__copy">
           <p className="page-lead" style={{ marginBottom: 0 }}>

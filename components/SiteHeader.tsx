@@ -12,30 +12,32 @@ export function SiteHeader() {
 
   return (
     <header className="site-header">
-      <motion.span
-        whileHover={{ opacity: 0.88 }}
-        whileTap={{ scale: 0.99 }}
-        transition={shellTransitionMedium}
-        style={{ display: "inline-block" }}
-      >
-        <Link href="/" className="site-header-brand">
-          <span className="site-header-brand__mark" aria-hidden>
-            ◇
-          </span>
-          <span className="site-header-brand__wording">
-            <strong>Research</strong>
-            <span className="site-header-brand__tag">Public Signal Workspace</span>
-          </span>
-        </Link>
-      </motion.span>
-      <nav className="site-nav">
-        <NavLink href="/" isActive={newActive}>
-          New Research
-        </NavLink>
-        <NavLink href="/history" isActive={historyActive}>
-          History
-        </NavLink>
-      </nav>
+      <div className="site-header__inner">
+        <motion.span
+          whileHover={{ opacity: 0.88 }}
+          whileTap={{ scale: 0.99 }}
+          transition={shellTransitionMedium}
+          style={{ display: "inline-block" }}
+        >
+          <Link href="/" className="site-header-brand">
+            <span className="site-header-brand__mark" aria-hidden>
+              ◇
+            </span>
+            <span className="site-header-brand__wording">
+              <strong>Research</strong>
+              <span className="site-header-brand__tag">Public Signal Workspace</span>
+            </span>
+          </Link>
+        </motion.span>
+        <nav className="site-nav">
+          <NavLink href="/" isActive={newActive}>
+            New Research
+          </NavLink>
+          <NavLink href="/history" isActive={historyActive}>
+            History
+          </NavLink>
+        </nav>
+      </div>
     </header>
   );
 }
