@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { mapPolishErrorToUi } from "@/lib/publish-angles/polish-ui-copy";
 import type { PublishAnglePolishResponse } from "@/lib/publish-angles/polish-schema";
 import type { PublishAnglesPhase1 } from "@/lib/publish-angles/types";
+import { formatPolishForCopy } from "@/lib/job-page/format-angle-copy";
 import { SHELL_EASE } from "@/lib/motion/shell";
 
 function sourceShort(s: string): string {
@@ -19,9 +20,11 @@ type Props = {
   jobStatus: string;
   publishAngles: PublishAnglesPhase1;
   aiRecapConfigured: boolean;
+  /** Fired after a successful polish — markdown for clipboard (side rail, etc.). */
+  onPolishReady?: (opportunityIndex: number, markdown: string) => void;
 };
 
-export function PublishAnglesPanel({ jobId, jobStatus, publishAngles, aiRecapConfigured }: Props) {
+export function PublishAnglesPanel({ jobId, jobStatus, publishAngles, aiRecapConfigured, onPolishReady }: Props) {
   const { momentumLine, opportunities } = publishAngles;
   const running = jobStatus === "queued" || jobStatus === "running";
   const failed = jobStatus === "failed";
@@ -68,7 +71,9 @@ export function PublishAnglesPanel({ jobId, jobStatus, publishAngles, aiRecapCon
       }
       setPolishError((e) => ({ ...e, [index]: "" }));
       setPolishDetails((d) => ({ ...d, [index]: null }));
-      setPolishByIndex((prev) => ({ ...prev, [index]: j as PublishAnglePolishResponse }));
+      const parsed = j as PublishAnglePolishResponse;
+      setPolishByIndex((prev) => ({ ...prev, [index]: parsed }));
+      onPolishReady?.(index, formatPolishForCopy(parsed));
     } catch (e) {
       setPolishError((err) => ({
         ...err,
@@ -81,7 +86,7 @@ export function PublishAnglesPanel({ jobId, jobStatus, publishAngles, aiRecapCon
 
   if (running) {
     return (
-      <section className="publish-angles" aria-label="Publishing angles">
+      <section id="publish-angles" className="publish-angles" aria-label="Publishing angles">
         <p className="muted publish-angles__hold">Publishing angles appear when this run finishes.</p>
       </section>
     );
@@ -89,7 +94,7 @@ export function PublishAnglesPanel({ jobId, jobStatus, publishAngles, aiRecapCon
 
   if (failed && opportunities.length === 0) {
     return (
-      <section className="publish-angles" aria-label="Publishing angles">
+      <section id="publish-angles" className="publish-angles" aria-label="Publishing angles">
         <p className="muted publish-angles__hold">No source-backed angles for this run.</p>
       </section>
     );
@@ -97,7 +102,7 @@ export function PublishAnglesPanel({ jobId, jobStatus, publishAngles, aiRecapCon
 
   if (succeeded && opportunities.length === 0) {
     return (
-      <section className="publish-angles" aria-label="Publishing angles">
+      <section id="publish-angles" className="publish-angles" aria-label="Publishing angles">
         <p className="muted publish-angles__hold">No angles surfaced for this run (thin report or sources).</p>
       </section>
     );
@@ -105,7 +110,7 @@ export function PublishAnglesPanel({ jobId, jobStatus, publishAngles, aiRecapCon
 
   if (opportunities.length === 0) {
     return (
-      <section className="publish-angles" aria-label="Publishing angles">
+      <section id="publish-angles" className="publish-angles" aria-label="Publishing angles">
         <p className="muted publish-angles__hold">No source-backed angles for this run.</p>
       </section>
     );
@@ -114,7 +119,7 @@ export function PublishAnglesPanel({ jobId, jobStatus, publishAngles, aiRecapCon
   const canPolish = succeeded && aiRecapConfigured;
 
   return (
-    <section className="publish-angles" aria-label="Publishing angles">
+    <section id="publish-angles" className="publish-angles" aria-label="Publishing angles">
       <h3 className="publish-angles__title">Publishing angles</h3>
       <p className="section-hint muted publish-angles__sub">
         Supplementary ideas from this run’s sources — the full report and key findings above stay primary.

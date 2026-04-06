@@ -83,6 +83,6 @@ describe("buildThreadInsight", () => {
     expect(t.direction).toBe("sparse");
     expect(t.sourceDominance).toBe("weak");
     expect(t.summaryLine).toMatch(/very light/i);
-    expect(t.summaryLine).not.toMatch(/thin signal.*light signal/s);
+    expect(t.summaryLine).not.toMatch(/thin signal[\s\S]*light signal/);
   });
 });

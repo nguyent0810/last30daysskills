@@ -7,6 +7,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DURATION_FAST_S, SHELL_EASE } from "@/lib/motion/shell";
 import ReactMarkdown from "react-markdown";
 import { EditorialDigest } from "@/components/EditorialDigest";
+import { JobRunNextMovesRail } from "@/components/JobRunNextMovesRail";
+import { JobRunSignalRail } from "@/components/JobRunSignalRail";
 import { PublishAnglesPanel } from "@/components/PublishAnglesPanel";
 import { RunRecapPanel } from "@/components/RunRecapPanel";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -26,6 +28,7 @@ import {
   sourceCardStatusLabel,
   sourceInterpretation,
 } from "@/lib/job-page/source-interpretation";
+import { formatDeterministicAngleForCopy } from "@/lib/job-page/format-angle-copy";
 import type { PublishAnglesPhase1 } from "@/lib/publish-angles/types";
 
 type SourceRun = {
@@ -93,6 +96,7 @@ export default function JobPage() {
   const [threadArchiveError, setThreadArchiveError] = useState<string | null>(null);
   const [threadPinBusy, setThreadPinBusy] = useState(false);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("overview");
+  const [latestPolishMarkdown, setLatestPolishMarkdown] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -139,6 +143,10 @@ export default function JobPage() {
   }, [id]);
 
   useEffect(() => {
+    setLatestPolishMarkdown(null);
+  }, [id]);
+
+  useEffect(() => {
     if (!data) return;
     if (data.job.status === "queued" || data.job.status === "running") {
       const t = setTimeout(() => void load(), 2000);
@@ -169,6 +177,38 @@ export default function JobPage() {
       setCopyMsg("Could not copy — select text manually");
       setTimeout(() => setCopyMsg(null), 3000);
     }
+  }
+
+  async function copyFirstAngleFromRail() {
+    const op = data?.publishAngles?.opportunities?.[0];
+    if (!op) return;
+    try {
+      await navigator.clipboard.writeText(formatDeterministicAngleForCopy(op));
+      setCopyMsg("Angle copied");
+      setTimeout(() => setCopyMsg(null), 2500);
+    } catch {
+      setCopyMsg("Could not copy — select text manually");
+      setTimeout(() => setCopyMsg(null), 3000);
+    }
+  }
+
+  async function copyPolishFromRail() {
+    if (!latestPolishMarkdown) return;
+    try {
+      await navigator.clipboard.writeText(latestPolishMarkdown);
+      setCopyMsg("Polish copied");
+      setTimeout(() => setCopyMsg(null), 2500);
+    } catch {
+      setCopyMsg("Could not copy — select text manually");
+      setTimeout(() => setCopyMsg(null), 3000);
+    }
+  }
+
+  function goToPublishAngles() {
+    setActiveTab("overview");
+    requestAnimationFrame(() => {
+      document.getElementById("publish-angles")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   function downloadMarkdown() {
@@ -576,6 +616,17 @@ export default function JobPage() {
         </div>
       )}
 
+      <div className="job-page-layout">
+        <aside className="job-rail-aside job-rail-aside--left">
+          <JobRunSignalRail topic={j.topic} jobStatus={j.status} orderedRuns={orderedRuns} />
+        </aside>
+        <div className="job-page-main-column">
+          {copyMsg ? (
+            <p className="copy-toast job-page-copy-toast" role="status">
+              {copyMsg}
+            </p>
+          ) : null}
+
       <section className="job-brief">
         <h2 className="section-title">What we found</h2>
         <p className="section-hint muted">Quick takeaway first: what matters most before you read deeper.</p>
@@ -676,6 +727,7 @@ export default function JobPage() {
                   jobStatus={j.status}
                   publishAngles={data.publishAngles}
                   aiRecapConfigured={Boolean(data.aiRecapConfigured)}
+                  onPolishReady={(_i, md) => setLatestPolishMarkdown(md)}
                 />
               ) : null}
             </div>
@@ -699,7 +751,6 @@ export default function JobPage() {
                   </p>
                 ) : null}
               </div>
-              {copyMsg && <p className="copy-toast">{copyMsg}</p>}
               {data.report && reportPreview?.hasMore && !reportExpanded ? (
                 <p className="section-hint muted report-section__hint">Showing the top findings first — expand for sources and the complete write-up.</p>
               ) : null}
@@ -788,6 +839,26 @@ export default function JobPage() {
           </div>
         )}
       </section>
+        </div>
+        <aside className="job-rail-aside job-rail-aside--right">
+          <JobRunNextMovesRail
+            threadId={thread?.id ?? null}
+            running={running}
+            canRerun={Boolean(j.topic) && !running}
+            rerunLoading={rerunLoading}
+            onRunAgain={() => void rerunResearch()}
+            canOpenReport
+            onOpenFullReport={() => setActiveTab("report")}
+            canCopyReport={canCopyReport}
+            onCopyReport={() => void copyReport()}
+            firstAngle={data.publishAngles?.opportunities?.[0] ?? null}
+            onCopyFirstAngle={() => void copyFirstAngleFromRail()}
+            latestPolishMarkdown={latestPolishMarkdown}
+            onCopyPolish={() => void copyPolishFromRail()}
+            onGoToAngles={goToPublishAngles}
+          />
+        </aside>
+      </div>
     </div>
   );
 }
